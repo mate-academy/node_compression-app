@@ -3,6 +3,7 @@
 
 const http = require('http');
 const fs = require('fs');
+const zlib = require('zlib');
 
 const server = new http.Server();
 
@@ -13,13 +14,17 @@ server.on('request', async(req, res) => {
 
   const file = fs.createReadStream('./src/lorem-new.txt');
 
-  res.setHeader('Content-type', 'text/txt');
+  const gzip = zlib.createGzip();
+
+  file.pipe(gzip);
+
+  res.setHeader('Content-type', 'file/gzip');
 
   res.setHeader('Content-Disposition',
-    'attachment; filename=Lorem-new.txt'
+    'attachment; filename=Lorem-new.gzip'
   );
 
-  file.pipe(res);
+  gzip.pipe(res);
 
   file.on('error', () => {
     res.statusCode = 500;
@@ -32,7 +37,9 @@ server.on('request', async(req, res) => {
   });
 });
 
-server.on('error', () => {});
+server.on('error', (err) => {
+  console.log(err);
+});
 
 server.listen(3000, () => {
   const options = {
