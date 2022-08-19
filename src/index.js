@@ -7,7 +7,7 @@ const zlib = require('zlib');
 
 const server = new http.Server();
 
-server.on('request', async(req, res) => {
+server.on('request', (req, res) => {
   const writeStream = fs.createWriteStream('./src/lorem-new.txt');
 
   req.pipe(writeStream);
