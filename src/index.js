@@ -4,32 +4,64 @@ const http = require('http');
 const zlib = require('zlib');
 const path = require('path');
 const fs = require('fs');
+const formidable = require('formidable');
 const { pipeline } = require('stream');
 
 const PORT = process.env.PORT || 3000;
 
 const server = new http.Server();
 
-server.on('request', async(req, res) => {
+function onServerError(res) {
+  res.statusCode = 500;
+  res.end('Something went wrong');
+}
+
+server.on('request', (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const fileName = url.pathname.slice(1) || 'index.html';
   const filePath = path.resolve('public', fileName);
 
   if (fileName === 'api') {
-    const gzip = zlib.createGzip();
+    const form = formidable({
+      keepExtensions: true,
+    });
 
-    pipeline(
-      req,
-      gzip,
-      res,
-      (error) => {
-        if (error) {
-          res.statusCode = 500;
-          console.log(error);
-          res.end('Something went wrong');
-        }
-      },
-    );
+    form.parse(req, (err, fields, files) => {
+      if (err) {
+        onServerError(res);
+      }
+
+      res.setHeader('Content-Encoding', 'gzip');
+
+      res.setHeader(
+        'Content-Disposition',
+        'attachment;'
+        + `filename=compressed-${files.file.originalFilename}`,
+      );
+
+      const { type } = fields;
+      const readStream = fs.createReadStream(files.file.filepath);
+
+      if (type === 'gzip') {
+        const gzip = zlib.createGzip();
+
+        pipeline(
+          readStream,
+          gzip,
+          res,
+          () => onServerError(res),
+        );
+      } else if (type === 'brotli') {
+        const brotli = zlib.createBrotliCompress();
+
+        pipeline(
+          readStream,
+          brotli,
+          res,
+          () => onServerError(res),
+        );
+      }
+    });
   } else {
     if (fileName !== 'compress' && !fs.existsSync(filePath)) {
       res.statusCode = 404;
