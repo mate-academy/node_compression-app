@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Compression page</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<h1>Compression page</h1>
+<form
+  action="/api"
+  method="post"
+  enctype="multipart/form-data"
+>
+  <fieldset class="fieldset">
+    <legend>Choose a file:</legend>
+
+    <input
+      type="file"
+      name="file"
+    >
+
+    <label>
+      <input
+        type="radio"
+        name="type"
+        value="gzip"
+        checked
+      >
+      Gzip
+    </label>
+
+    <label>
+      <input
+        type="radio"
+        name="type"
+        value="brotli"
+      >
+      Brotli
+    </label>
+
+    <label>
+      <input type="submit">
+      Compress file
+    </label>
+  </fieldset>
+</form>
+</body>
+</html>
