@@ -1,0 +1,37 @@
+html {
+  font-family: Arial, 'sans-serif';
+}
+
+.body {
+  border: 1px solid black;
+  border-radius: 5px;
+  padding: 20px;
+  width: max-content;
+  background-color: #dceef3;
+}
+
+.body__form {
+  display: flex;
+  flex-direction: column;
+  max-width: max-content;
+  gap: 20px;
+}
+
+.body__form-submit {
+  padding: 10px;
+  outline: none;
+  background-color: #a6d2e0;
+  border: none;
+  transition: background-color 0.3s;
+}
+
+.body__form-submit:hover {
+  background-color: #438397;
+}
+
+.result {
+  margin: 0 auto;
+  padding: 25px;
+  border: 1px solid lightblue;
+  border-radius: 10px;
+}
