@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+      <meta charset="UTF-8">
+      <title>Title</title>
+      <link rel="stylesheet" href="src/public/main.css">
+  </head>
+  <body class="content">
+    <h1 class="title">Compression App:</h1>
+
+    <div class="body">
+      <form
+        class="body__form"
+        style=""
+        action="/upload"
+        method="post"
+        enctype="multipart/form-data"
+      >
+        <div class="body__form-item">
+          <label for="compression">Select a compression type</label>
+
+          <select name="compression" id="compression">
+            <option value="Gzip">Gzip</option>
+            <option value="Deflate">Deflate</option>
+            <option value="BrotliCompress">Brotli Compress</option>
+          </select>
+        </div>
+
+        <div class="body__form-item">
+          <label for="file">Select a file</label>
+          <input id="file" name="file" type="file">
+        </div>
+
+        <button class="body__form-submit" type="submit">Send</button>
+      </form>
+    </div>
+  </body>
+</html>
