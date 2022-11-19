@@ -10,29 +10,32 @@ const zlib = require('zlib');
 const PORT = 8000;
 const server = new http.Server();
 
-const random = (() => {
-  const buf = Buffer.alloc(16);
-
-  return () => randomFillSync(buf).toString('hex');
-})();
-
 server.on('request', (req, res) => {
+  let compression;
+  let fileName;
+
   if (req.method === 'POST') {
     const bb = busboy({ headers: req.headers });
 
+    bb.on('field', (name, value) => {
+      compression = zlib[value]();
+    });
+
     bb.on('file', (name, file, info) => {
-      const saveTo = path.join(__dirname, `compressed-${random()}`);
-      const gzipCompress = zlib.createGzip();
+      fileName = `compressed-${info.name}`;
+
+      const saveTo = path.join(__dirname, fileName);
       const write = fs.createWriteStream(saveTo);
 
-
-      file.pipe(gzipCompress);
-      gzipCompress.pipe(write);
+      file.pipe(compression);
+      compression.pipe(write);
     });
 
     bb.on('finish', () => {
       res.statusCode = 200;
-      res.end('OK');
+
+      res.end(`link to download file: http://localhost:8000/public/${
+        fileName}`);
     });
 
     bb.on('error', (error) => {
@@ -41,10 +44,10 @@ server.on('request', (req, res) => {
     });
 
     req.pipe(bb);
-  } else if (req.method === 'GET') {
+  } else {
     const url = new URL(req.url, `http://${req.headers.host}`);
-    const fileName = url.pathname.slice(1) || 'index.html';
-    const filePath = path.resolve('public', fileName);
+    const filePathName = url.pathname.slice(1) || 'index.html';
+    const filePath = path.resolve('public', filePathName);
     const file = fs.createReadStream(filePath);
 
     res.setHeader('Content-Type', 'text/html');
