@@ -14,7 +14,7 @@ server.on('request', (req, res) => {
     form.parse(req, (err, fields, files) => {
       if (err) {
         res.statusCode = 400;
-        res.end('unable to upload, pls check your file');
+        res.end('unable to upload, please check your file');
       }
 
       const compressType = fields.select;
