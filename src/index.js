@@ -16,6 +16,12 @@ server.on('request', (req, res) => {
 
     const file = fs.createReadStream('public/index.html');
 
+    file.on('error', () => {
+      res.statusCode = 404;
+      res.statusMessage = 'error has sprang';
+      res.end('');
+    });
+
     file.pipe(res);
 
     res.on('close', () => {
@@ -31,6 +37,12 @@ server.on('request', (req, res) => {
     const file = fs.createReadStream('public/index.css');
 
     file.pipe(res);
+
+    file.on('error', () => {
+      res.statusCode = 404;
+      res.statusMessage = 'error has sprang';
+      res.end('');
+    });
 
     res.on('close', () => {
       file.destroy();
@@ -76,7 +88,13 @@ server.on('request', (req, res) => {
         `attachment; filename="${filename}"`
       );
 
-      pipeline(fileStream, chosenCompression, res, () => { });
+      pipeline(fileStream, chosenCompression, res, (error) => {
+        if (error) {
+          res.statusCode = 500;
+          res.statusMessage = 'error has sprang';
+          res.end('');
+        }
+      });
 
       res.on('close', () => {
         fileStream.destroy();
@@ -86,7 +104,8 @@ server.on('request', (req, res) => {
     return;
   }
 
-  res.end('invalid URL');
+  res.statusCode = 404;
+  res.end('invalid URL 404');
 });
 
 server.listen(3000);
