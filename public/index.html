@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Bank Customer Feedback Form</title>
+  <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700" rel="stylesheet">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css"
+    integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
+  <link rel="stylesheet" href="index.css">
+</head>
+
+<body>
+  <div class="testbox">
+    <form
+      id="form"
+      action="http://localhost:3000/compressFile"
+      method="post"
+      enctype="multipart/form-data"
+    >
+      <h1>File compressor</h1>
+
+      <h4>choose a compression type<span>*</span></h4>
+
+      <select required name="compression">
+        <option value="" selected disabled >choose...</option>
+        <option value="Brotli">Brotli</option>
+        <option value="Gzip">Gzip</option>
+      </select>
+
+      <h4>choose a file<span>*</span></h4>
+
+      <input
+        required
+        id="file_selector"
+        type="file"
+        name="file"
+      />
+
+      <div class="btn-block">
+        <button type="submit" value="Upload">Compress</button>
+      </div>
+    </form>
+  </div>
+</body>
+</html>
