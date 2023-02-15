@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Node.js compression app",
   "main": "src/index.js",
+  "type": "module",
   "scripts": {
     "init": "mate-scripts init",
     "start": "mate-scripts start",
