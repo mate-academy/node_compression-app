@@ -1,9 +1,11 @@
 # Compression App (with Node.js)
+
 Implement a page that allow to
+
 - select a file
 - choose a compression type (supported by zlib)
 - send it to the server
-- and receive a compressed file 
+- and receive a compressed file
 
 Please use Streams
 
