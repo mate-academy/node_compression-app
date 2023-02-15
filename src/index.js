@@ -45,26 +45,52 @@ server.on('request', (req, res) => {
       file.push(chunk);
     });
 
-    let buffer;
-
-    req.on('end', () => {
-      buffer = Buffer.concat(file);
-
-      fs.createWriteStream('uploads/file').write(buffer);
+    req.on('error', (err) => {
+      console.log(err);
+      res.statusCode = 500;
+      res.end('Server error');
     });
 
-    const gzip = createGzip();
+    req.on('end', () => {
+      const buffer = Buffer.concat(file);
 
-    res.setHeader('Content-Encoding', 'gzip');
-    res.setHeader('Content-Type', 'application/zip');
-    res.setHeader('Content-Disposition', 'attachment; filename="file.gz"');
+      fs.readFile('uploads/file', 'utf-8', (err, data) => {
+        if (err) {
+          console.log(err);
+          res.statusCode = 500;
+          res.end('Server error');
+        }
 
-    pipeline(fs.createReadStream('uploads/file'), gzip, res, (err) => {
-      if (err) {
-        console.log(err);
-        res.statusCode = 500;
-        res.end('Server error');
-      }
+        const regex = /(filename=")(.*?)(")/g;
+
+        const fileName = regex.exec(data)[2];
+
+        fs.createWriteStream(`uploads/${fileName}`).write(buffer);
+
+        const gzip = createGzip();
+
+        res.setHeader('Content-Encoding', 'gzip');
+        res.setHeader('Content-Type', 'application/zip');
+
+        res.setHeader(
+          'Content-Disposition',
+          `attachment; filename="${fileName}.gz"`
+        );
+        res.statusCode = 200;
+
+        pipeline(
+          fs.createReadStream(`uploads/${fileName}`),
+          gzip,
+          res,
+          (error) => {
+            if (error) {
+              console.log(err);
+              res.statusCode = 500;
+              res.end('Server error');
+            }
+          }
+        );
+      });
     });
   }
 });
