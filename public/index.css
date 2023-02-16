@@ -1,7 +1,8 @@
 html, body {
   min-height: 100%;
-  }
-  body, div, form, input, select {
+}
+
+body, div, form, input, select {
   padding: 0;
   margin: 0;
   outline: none;
@@ -9,23 +10,28 @@ html, body {
   font-size: 14px;
   color: #666;
   line-height: 22px;
-  }
-  h1, h4 {
+}
+
+h1, h4 {
   margin: 15px 0 4px;
   font-weight: 400;
-  }
-  h4 {
+}
+
+h4 {
   margin: 20px 0 4px;
   font-weight: 400;
-  }
-  span {
+}
+
+span {
   color: red;
-  }
-  .small {
+}
+
+.small {
   font-size: 10px;
   line-height: 18px;
-  }
-  .testbox {
+}
+
+.testbox {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -33,55 +39,67 @@ html, body {
   max-width: 500px;
   margin: 10% auto;
   padding: 3px;
-  }
-  form {
+}
+
+form {
   width: 100%;
   padding: 20px;
   background: #fff;
   box-shadow: 0 2px 5px #ccc;
-  }
-  input {
+}
+
+input {
   width: calc(100% - 10px);
   padding: 5px;
   border: 1px solid #ccc;
   border-radius: 3px;
   vertical-align: middle;
-  }
-  input:hover, textarea:hover, select:hover {
+}
+
+input:hover, textarea:hover, select:hover {
   outline: none;
   border: 1px solid #095484;
   background: #e6eef7;
-  }
-  .title-block select, .title-block input {
+}
+
+.title-block select, .title-block input {
   margin-bottom: 10px;
-  }
-  select {
+}
+
+select {
   padding: 7px 0;
   border-radius: 3px;
   border: 1px solid #ccc;
   background: transparent;
-  }
-  select, table {
+}
+
+select, table {
   width: 100%;
-  }
-  option {
+}
+
+option {
   background: #fff;
-  }
-  .day-visited, .time-visited {
+}
+
+.day-visited, .time-visited {
   position: relative;
-  }
-  input[type="date"]::-webkit-inner-spin-button {
+}
+
+input[type="date"]::-webkit-inner-spin-button {
   display: none;
-  }
-  input[type="time"]::-webkit-inner-spin-button {
+}
+
+input[type="time"]::-webkit-inner-spin-button {
   margin: 2px 22px 0 0;
-  }
-  .day-visited i, .time-visited i, input[type="date"]::-webkit-calendar-picker-indicator {
+}
+
+.day-visited i, .time-visited i, input[type="date"]::-webkit-calendar-picker-indicator {
   position: absolute;
   top: 8px;
   font-size: 20px;
-  }
-  .day-visited i, .time-visited i {
+}
+
+.day-visited i, .time-visited i {
   right: 5px;
   z-index: 1;
   color: #a9a9a9;
@@ -90,16 +108,19 @@ html, body {
   right: 0;
   z-index: 2;
   opacity: 0;
-  }
-  .question-answer label {
+}
+
+.question-answer label {
   display: block;
   padding: 0 20px 10px 0;
-  }
-  .question-answer input {
+}
+
+.question-answer input {
   width: auto;
   margin-top: -2px;
-  }
-  th, td {
+}
+
+th, td {
   width: 18%;
   padding: 15px 0;
   border-bottom: 1px solid #ccc;
@@ -108,19 +129,23 @@ html, body {
   line-height: 18px;
   font-weight: 400;
   word-break: break-all;
-  }
-  .first-col {
+}
+
+.first-col {
   width: 25%;
   text-align: left;
-  }
-  textarea {
+}
+
+textarea {
   width: calc(100% - 6px);
-  }
-  .btn-block {
+}
+
+.btn-block {
   margin-top: 20px;
   text-align: center;
-  }
-  button {
+}
+
+button {
   width: 150px;
   padding: 10px;
   border: none;
@@ -131,24 +156,30 @@ html, body {
   font-size: 16px;
   color: #fff;
   cursor: pointer;
-  }
-  button:hover {
+}
+
+button:hover {
   background-color: #0666a3;
-  }
-  @media (min-width: 568px) {
+}
+
+@media (min-width: 568px) {
   .title-block {
-  display: flex;
-  justify-content: space-between;
+    display: flex;
+    justify-content: space-between;
   }
+
   .title-block select {
-  width: 30%;
-  margin-bottom: 0;
+    width: 30%;
+    margin-bottom: 0;
   }
+
   .title-block input {
-  width: 31%;
-  margin-bottom: 0;
+    width: 31%;
+    margin-bottom: 0;
   }
+
   th, td {
-  word-break: keep-all;
+    word-break: keep-all;
+
   }
-  }
+}

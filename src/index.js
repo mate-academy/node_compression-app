@@ -9,9 +9,10 @@ const { pipeline } = require('stream');
 const server = new http.Server();
 
 server.on('request', (req, res) => {
-  const normalizedUrl = new URL(req.url, `http://${req.headers.host}`).pathname;
+  const normalizedUrl = new URL(req.url, `http://${req.headers.host}`).pathname
+    || '/index.html';
 
-  if (normalizedUrl === '/' || normalizedUrl === '/index.html') {
+  if (normalizedUrl === '/index.html') {
     res.setHeader('Content-Type', 'text/html');
 
     const file = fs.createReadStream('public/index.html');
@@ -67,14 +68,17 @@ server.on('request', (req, res) => {
       const contentType = files.file.mimetype;
 
       let chosenCompression;
+      let encoding;
 
       switch (compressWith) {
         case 'Brotli':
           chosenCompression = zlib.createBrotliCompress();
+          encoding = 'br';
           break;
 
         case 'Gzip':
           chosenCompression = zlib.createGzip();
+          encoding = 'gzip';
           break;
 
         default:
@@ -82,6 +86,7 @@ server.on('request', (req, res) => {
       }
 
       res.setHeader('Content-Type', `${contentType}`);
+      res.setHeader('Content-Encoding', `${encoding}`);
 
       res.setHeader(
         'Content-Disposition',
