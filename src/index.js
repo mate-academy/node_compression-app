@@ -26,7 +26,7 @@ server.on('request', (req, res) => {
       res.statusCode = 404;
       res.end();
     });
-  } else if (pathname === 'dowload') {
+  } else if (pathname === 'download') {
     const form = new formidable.IncomingForm();
 
     form.parse(req, (err, fields, files) => {
