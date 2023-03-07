@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>squeeze me</title>
+  </head>
+  <body>
+    <form
+      method="post"
+      action="/compress"
+      enctype="multipart/form-data"
+    >
+      <label>
+        Choose a file
+
+        <input type="file" name="file">
+      </label>
+
+      <br>
+
+      <label>
+        Choose a preferred compression
+
+        <select name="compression">
+          <option value="gzip" selected>
+            gzip
+          </option>
+
+          <option value="brotli">
+            Brotli
+          </option>
+
+          <option value="deflate">
+            Deflate
+          </option>
+        </select>
+      </label>
+
+      <br>
+
+      <button class="button is-primary">squeeze me!</button>
+    </form>
+  </body>
+</html>
