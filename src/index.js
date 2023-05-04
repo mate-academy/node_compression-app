@@ -34,14 +34,13 @@ server.on('request', (req, res) => {
             `attachment; filename=${originalFilename}.gz`
           );
           break;
-        case 'unzip':
-          const parts = originalFilename.split('.');
-
-          zip = zlib.createGunzip();
+        case 'brotli':
+          zip = zlib.createBrotliCompress();
+          res.setHeader('Content-type', 'application/x-br');
 
           res.setHeader(
             'Content-Disposition',
-            `attachment; filename=${parts[0]}.${parts[1]}`
+            `attachment; filename=${originalFilename}.br`
           );
           break;
       }
@@ -64,7 +63,7 @@ server.on('request', (req, res) => {
       <input type='file' id="myFile" name="filename">
       <select name="type">
         <option>gzip</option>
-        <option>unzip</option>
+        <option>brotli</option>
       </select>
       <button type="submit">Upload</button>
     <form>
