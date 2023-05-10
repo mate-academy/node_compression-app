@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+
+    <link rel='stylesheet' href='./main.css' />
+
+    <title>Compression app</title>
+  </head>
+  <body>
+    <form class='file-form' action='http://localhost:3000/upload' method='POST' enctype="multipart/form-data">
+      <input type='file' class='file-form_item file-input' name="file"/>
+
+      <div class='file-form_item'>
+        <label for="file-form_select">
+          Choose compression type
+        </label>
+
+        <select defaultValue='gzip' class="file-form_select" id="file-form_select" name="compressionType">
+          <option
+            value='gzip'
+          >
+            gzip
+          </option>
+
+          <option
+            value='gunzip'
+          >
+            gunzip
+          </option>
+
+          <option
+            value='deflate'
+          >
+            deflate
+          </option>
+        </select>
+      </div>
+
+      <button type='submit' class='file-form_item file-form_button'>
+        Send
+      </button>
+    </form>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <script defer src="./index.js"></script>
+  </body>
+</html>
