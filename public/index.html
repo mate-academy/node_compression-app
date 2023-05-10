@@ -10,15 +10,15 @@
     <title>Compression app</title>
   </head>
   <body>
-    <form class='file-form'>
-      <input type='file' class='file-form_item file-input' />
+    <form class='file-form' action='http://localhost:3000/upload' method='POST' enctype="multipart/form-data">
+      <input type='file' class='file-form_item file-input' name="file"/>
 
       <div class='file-form_item'>
-        <label>
+        <label for="file-form_select">
           Choose compression type
         </label>
 
-        <select defaultValue='gzip' class="file-form_select">
+        <select defaultValue='gzip' class="file-form_select" id="file-form_select" name="compressionType">
           <option
             value='gzip'
           >
@@ -32,14 +32,14 @@
           </option>
 
           <option
-            value='inflate'
+            value='deflate'
           >
-            inflate
+            deflate
           </option>
         </select>
       </div>
 
-      <button type='button' class='file-form_item file-form_button'>
+      <button type='submit' class='file-form_item file-form_button'>
         Send
       </button>
     </form>

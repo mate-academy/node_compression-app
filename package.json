@@ -26,7 +26,6 @@
     "projectType": "javascript"
   },
   "dependencies": {
-    "multiparty": "^4.2.3",
-    "webpack": "^5.82.0"
+    "formidable": "^2.1.1"
   }
 }
