@@ -13,7 +13,9 @@ const PORT = process.env.PORT || 3000;
 
 const upload = multer({ dest: 'uploads/' });
 
-const server = http.createServer((req, res) => {
+const server = new http.Server();
+
+server.on('request', (req, res) => {
   if (req.url === '/') {
     const filePath = path.resolve('public', 'index.html');
 
