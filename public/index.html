@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+  </head>
+  <body>
+    <form action="/download" method="POST" enctype="multipart/form-data">
+      <label for="file">
+        Select file:
+
+        <input id="file" type="file" name="file"/>
+      </label>
+
+      <label for="type">
+        Select type of compression:
+        <select name="compression">
+          <option value="gzip">Gzip</option>
+          <option value="br">Brotli</option>
+          <option value="dfl">Deflate</option>
+        </select>
+      </label>
+
+      <button type="submit">Submit</button>
+    </form>
+  </body>
+</html>
