@@ -7,7 +7,7 @@ const fs = require('fs');
 const zlib = require('zlib');
 const { pipeline } = require('stream');
 
-const PORT = process.env.PORT || '3000';
+const PORT = process.env.PORT || '8000';
 
 const server = new http.Server();
 
@@ -48,13 +48,12 @@ server.on('request', (req, res) => {
       res.setHeader('Content-Encoding', extension);
 
       const newFilePath = files.file.originalFilename + extension;
-      const newFile = fs.createWriteStream(newFilePath);
 
-      pipeline(file, compression, newFile, (error) => {
+      pipeline(file, compression, res, (error) => {
         if (error) {
           console.log(error);
 
-          res.end(String(err));
+          res.end(JSON.stringify(err));
         }
       });
 
@@ -82,7 +81,7 @@ server.on('request', (req, res) => {
       res.end('Something went wrong!');
     });
 
-    res.on('error', () => {
+    res.on('close', () => {
       htmlFile.destroy();
     });
   }
