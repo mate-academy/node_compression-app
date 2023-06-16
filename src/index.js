@@ -5,6 +5,7 @@ const fs = require('fs');
 const zlib = require('zlib');
 const path = require('path');
 const { pipeline } = require('stream');
+const multiparty = require('multiparty');
 
 const server = http.createServer((req, res) => {
   if (req.url === '/') {
@@ -26,14 +27,12 @@ const server = http.createServer((req, res) => {
   }
 
   if (req.url === '/compress') {
-    const multiparty = require('multiparty');
-
     const form = new multiparty.Form();
 
     form.parse(req, (err, fields, files) => {
       if (err) {
         res.statusCode = 404;
-        res.end('Error', err);
+        res.end('Error');
 
         return;
       }
