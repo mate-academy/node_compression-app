@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Compression App</title>
+</head>
+<body>
+  <h1>Compression App</h1>
+
+  <form method="POST" action="/compress" enctype="multipart/form-data">
+    <input type="file" name="file" required>
+
+    <br></br>
+
+    <select name="compressionType" required>
+      <option
+        selected
+        disabled
+      >
+        Choose compression type
+      </option>
+
+      <option value="gzip" selected>Gzip</option>
+    </select>
+
+    <br></br>
+
+    <button type="submit">Compress File</button>
+  </form>
+</body>
+</html>
