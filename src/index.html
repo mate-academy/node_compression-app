@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Compression App</title>
+</head>
+<body>
+  <h1>Compression App</h1>
+
+  <form
+    action="/compress"
+    method="POST"
+    enctype="multipart/form-data"
+  >
+    <input
+      type="file"
+      name="file"
+      required
+    />
+
+    <select
+      name="compress"
+      required
+    >
+      <option
+        value=""
+        selected
+        disabled
+      >
+        Choose the compress
+      </option>
+      <option value="gzip">GZIP</option>
+      <option value="deflate">Deflate</option>
+      <option value="br">Brotli (BR)</option>
+    </select>
+
+    <input type="submit" value="Compress" />
+  </form>
+</body>
+</html>
