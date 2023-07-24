@@ -1,3 +1,5 @@
+/* eslint-disable no-console */
+
 'use strict';
 
 const http = require('http');
@@ -11,7 +13,6 @@ const PORT = 3030;
 const server = http.createServer(async(req, res) => {
   if (req.method === 'POST' && req.url === '/api/upload') {
     const form = formidable();
-
     let fields;
     let files;
 
