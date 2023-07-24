@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+</head>
+<body>
+  <form
+    method="POST"
+    action="http://localhost:3030/api/upload"
+    enctype="multipart/form-data"
+    name="compressForm"
+  >
+    <div>
+      <input type="file" name="file">
+    </div>
+
+    <br/>
+
+    <div>
+      Choose type of compressing
+
+      <select name="typeOfCompressing" >
+        <option value="brotliCompress" selected>Brotli Compress</option>
+        <option value="deflate">Deflate</option>
+        <option value="gzip">Gzip</option>
+      </select>
+    </div>
+
+    <br/>
+
+    <div>
+      <button type="submit">Send</button>
+    </div>
+  </form>
+</body>
+</html>
