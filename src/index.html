@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <h1>hello my friend!</h1>
+
+    <form action="/download" method="post" enctype="multipart/form-data">
+      <input type="file" name="file" />
+      <br>
+      <br>
+      <select name="compression" id="select">
+        <option value="gzip" selected>gzip</option>
+        <option value="brotli">brotli</option>
+      </select>
+      <br>
+      <br>
+      <button>GO!</button>
+    </form>
+
+  </body>
+</html>
