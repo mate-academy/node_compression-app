@@ -7,7 +7,6 @@ const { pipeline, Readable } = require('stream');
 const multer = require('multer');
 
 const { getCompressionStream } = require('./modules/getCompressionStream');
-const { stdout } = require('process');
 
 const PORT = process.env.PORT || 8080;
 
@@ -36,7 +35,7 @@ server.on('request', (req, res) => {
 
       res.setHeader(
         'Content-Disposition',
-        `attachment; filename=${originalname}`
+        `attachment; filename=${originalname}`,
       );
 
       pipeline(fileStream, compressionStream, res, (error) => {
@@ -74,11 +73,12 @@ server.on('request', (req, res) => {
   });
 });
 
-server.on('error', (err) => {
-  throw new Error(err);
+server.on('error', (error) => {
+  // eslint-disable-next-line no-console
+  console.log('Error occured: ', error);
 });
 
 server.listen(PORT, () => {
   // eslint-disable-next-line no-console
-  stdout('Server is on');
+  console.log('Server started! 🚀');
 });
