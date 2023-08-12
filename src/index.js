@@ -7,7 +7,6 @@ const { pipeline, Readable } = require('stream');
 const multer = require('multer');
 
 const { getCompressionStream } = require('./modules/getCompressionStream');
-const { stdout } = require('process');
 
 const PORT = process.env.PORT || 8080;
 
@@ -18,8 +17,7 @@ server.on('request', (req, res) => {
   if (req.url === '/upload' && req.method.toLowerCase() === 'post') {
     upload.single('file')(req, res, (err) => {
       if (err) {
-        res.statusCode = 400;
-        res.end('File upload error');
+        res.status(400).send('File upload error');
 
         return;
       }
@@ -41,8 +39,7 @@ server.on('request', (req, res) => {
 
       pipeline(fileStream, compressionStream, res, (error) => {
         if (error) {
-          res.statusCode = 400;
-          res.end(`Error occured: ${error}`);
+          res.status(400).send(`Error occured: ${error}`);
         }
       });
     });
@@ -56,8 +53,7 @@ server.on('request', (req, res) => {
   const filePath = path.resolve('public', fileName);
 
   if (!fs.existsSync(filePath)) {
-    res.statusCode = 404;
-    res.end('File does not exist');
+    res.status(404).send('File does not exist');
   }
 
   const file = fs.createReadStream(filePath);
@@ -65,8 +61,7 @@ server.on('request', (req, res) => {
   file.pipe(res);
 
   file.on('error', () => {
-    res.statusCode = 500;
-    res.end('Server error');
+    res.status(500).send('Server error');
   });
 
   res.on('close', () => {
@@ -80,5 +75,5 @@ server.on('error', (err) => {
 
 server.listen(PORT, () => {
   // eslint-disable-next-line no-console
-  stdout('Server is on');
+  console.log('Server is on');
 });

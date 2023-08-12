@@ -3,23 +3,16 @@
 const zlib = require('zlib');
 
 const getCompressionStream = (compressionType) => {
-  let compressionStream;
-
   switch (compressionType) {
     case 'brotli':
-      compressionStream = zlib.createBrotliCompress();
-      break;
+      return zlib.createBrotliCompress();
 
     case 'deflate':
-      compressionStream = zlib.createDeflate();
-      break;
+      return zlib.createDeflate();
 
     default:
-      compressionStream = zlib.createGzip();
-      break;
+      return zlib.createGzip();
   }
-
-  return compressionStream;
 };
 
 module.exports = { getCompressionStream };
