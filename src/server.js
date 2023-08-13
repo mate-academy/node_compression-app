@@ -5,6 +5,7 @@ const zlib = require('zlib');
 const path = require('path');
 const fs = require('fs');
 const { pipeline } = require('stream');
+const formidable = require('formidable');
 
 const PATHS = {
   index: 'GET /',
@@ -30,63 +31,53 @@ server.on('request', (req, res) => {
       break;
 
     case PATHS.upload:
-      const chunks = [];
+      const form = new formidable.IncomingForm({});
 
-      req.on('data', (chunk) => {
-        chunks.push(chunk);
-      });
+      form.parse(req, (err, fields, files) => {
+        if (err) {
+          res.writeHeader(500, { 'Content-Type': 'text/plain' });
+          res.end('Internal server error');
 
-      req.on('end', () => {
-        const data = Buffer.concat(chunks).toString();
+          return;
+        }
 
-        const compressionType = data.slice(data.indexOf('"compressions"') + 15)
-          .trim()[0];
-
+        let fileName;
         let compressionStream;
-        let compressionName;
 
-        switch (compressionType) {
-          case 'g':
+        switch (fields.compressions) {
+          case 'gzip':
             compressionStream = zlib.createGzip();
-            compressionName = 'gzip';
+            fileName = files.file.originalFilename + '.gz';
             break;
-          case 'b':
+          case 'brotli':
             compressionStream = zlib.createBrotliCompress();
-            compressionName = 'brotli';
+            fileName = files.file.originalFilename + '.br';
             break;
-          case 'd':
+          case 'deflate':
             compressionStream = zlib.createDeflate();
-            compressionName = 'deflate';
+            fileName = files.file.originalFilename + '.deflate';
             break;
         }
 
-        const fileName = /filename="(.+)"/.exec(data)[1];
-        const contetType = /Content-Type: (.+)/.exec(data)[1];
-
         res.writeHeader(200, {
-          // eslint-disable-next-line max-len
-          'Content-Disposition': `attachment; filename=${fileName}.${compressionName}`,
-          'Content-Type': contetType,
+          'Content-Disposition': `attachment; filename=${fileName}`,
+          'Content-Type': files.file.mimetype,
         });
 
-        const dataPart = data.slice(data.indexOf('\r\n\r\n') + 4);
-        const dataClean = dataPart.slice(
-          0, dataPart.indexOf('------')
-        ).trim();
-        // ------ is the beginning of the next part of the request
-        // so we need to cut it off
-
-        pipeline(dataClean, compressionStream, res, (err) => {
-          if (err) {
-            res.writeHeader(500, { 'Content-Type': 'text/plain' });
-            res.end('Internal server error');
-          }
-        });
+        pipeline(
+          fs.ReadStream(files.file.filepath),
+          compressionStream, res, (pipelineErr) => {
+            if (pipelineErr) {
+              res.writeHeader(500, { 'Content-Type': 'text/plain' });
+              res.end('Internal server error');
+            }
+          });
 
         res.on('close', () => {
           compressionStream.destroy();
         });
       });
+
       break;
 
     default:
