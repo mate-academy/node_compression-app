@@ -1,80 +1,70 @@
-/* eslint-disable no-console */
+/*eslint-disable no-console*/
 'use strict';
 
 const http = require('http');
+const path = require('path');
 const fs = require('fs');
 const zlib = require('zlib');
-const path = require('path');
-const formidable = require('formidable');
+const multer = require('multer');
+const { Readable } = require('stream');
 
 const PORT = 4200;
 const server = new http.Server();
+const upload = multer();
 
 server.on('request', (req, res) => {
-  switch (req.method) {
-    case 'GET':
-      const filePath = path.join(__dirname, 'index.html');
+  if (req.method === 'POST') {
+    upload.single('file')(req, res, (err) => {
+      if (err) {
+        res.statusCode = 400;
+        res.end('File cannot be uploaded');
 
-      fs.readFile(filePath, (err, data) => {
-        if (err) {
-          res.writeHead(500, { 'Content-Type': 'text/plain' });
-          res.end('Internal server error');
-        } else {
-          res.writeHead(200, { 'Content-Type': 'text/html' });
-          res.end(data);
-        }
-      });
+        return;
+      }
 
-      break;
+      const fileStream = new Readable();
 
-    case 'POST':
-      const form = new formidable.IncomingForm();
+      fileStream.push(req.file.buffer);
+      fileStream.push(null);
 
-      form.parse(req, (err, fields, files) => {
-        if (err) {
-          res.writeHead(500, { 'Content-Type': 'text/plain' });
-          res.end('Internal server error');
+      const compressionStream = req.body.compression === 'gzip'
+        ? zlib.createGzip()
+        : zlib.createDeflate();
 
-          return;
-        }
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename=${req.file.originalname}`,
+      );
+      res.setHeader('Content-Type', 'application/octet-stream');
 
-        const compressionType = fields.compressionType;
-        const filePath2 = files.file.path;
-        const readStream = fs.createReadStream(filePath2);
-        const compressedFilePath = `${filePath2}.${compressionType}`;
-        const writeStream = fs.createWriteStream(compressedFilePath);
-        const compressor = compressionType === 'gzip'
-          ? zlib.createGzip()
-          : zlib.createDeflate();
-
-        readStream
-          .pipe(compressor)
-          .pipe(writeStream);
-
-        writeStream.on('finish', () => {
-          res.writeHead(200, { 'Content-Type': 'application/octet-stream' });
-
-          const compressedFileStream = fs.createReadStream(compressedFilePath);
-
-          compressedFileStream.pipe(res);
-
-          compressedFileStream.on('end', () => {
-            fs.unlink(compressedFilePath, () => {});
-          });
+      fileStream
+        .pipe(compressionStream)
+        .pipe(res)
+        .on('finish', () => {
+          res.end();
+        })
+        .on('error', (error) => {
+          res.statusCode = 400;
+          res.end(`Something went wrong: ${error}`);
         });
+    });
 
-        writeStream.on('error', () => {
-          res.writeHead(500, { 'Content-Type': 'text/plain' });
-          res.end('Internal server error');
-        });
-      });
-
-      break;
-
-    default:
-      res.writeHeader(404, { 'Content-Type': 'text/plain' });
-      res.end('Not found');
+    return;
   }
+
+  const filePath = path.join('public', 'index.html');
+  const file = fs.createReadStream(filePath);
+
+  file.pipe(res);
+
+  file.on('error', () => {
+    res.statusCode = 500;
+    res.end('Server error');
+  });
+
+  res.on('close', () => {
+    file.destroy();
+  });
 });
 
 server.on('error', () => {});
