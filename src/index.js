@@ -1,4 +1,4 @@
-/*eslint-disable no-console*/
+/* eslint-disable no-console */
 'use strict';
 
 const http = require('http');
