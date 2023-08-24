@@ -10,11 +10,13 @@ const PORT = 5700;
 const server = new http.Server();
 
 server.on('request', (req, res) => {
-  const filePath = path.resolve('public', 'text.txt');
+  const fileName = req.url.slice(1) || 'index.html';
+  const filePath = path.join('public', fileName);
 
   if (!fs.existsSync(filePath)) {
     res.statusCode = 404;
     res.end('File is not found');
+    return;
   }
 
   res.setHeader('Content-Encoding', 'gzip');
@@ -28,11 +30,8 @@ server.on('request', (req, res) => {
   });
 
   file.pipe(gzip).pipe(res);
-  gzip.pipe(fs.createWriteStream(filePath + '.gzib'));
-
-  file.on('close', () => {
-    file.destroy();
-  });
+  gzip.pipe(fs.createWriteStream(filePath + '.gzip'));
+  res.end();
 });
 
 server.listen(PORT, () => {
