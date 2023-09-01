@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Compression app</title>
+</head>
+<body>
+  <h1>Compression app</h1>
+
+  <form action="/upload" method="post" enctype="multipart/form-data">
+    <input type="file" name="file" required>
+
+    <br><br>
+
+    <select name="compression" id="compression" required>
+      <option value="" selected disabled>Select the type of compression</option>
+      <option value="gzip">Gzip</option>
+      <option value="brotli">Brotli</option>
+      <option value="deflate">Deflate</option>
+    </select>
+
+    <br><br>
+
+    <button type="submit">Upload</button>
+  </form>
+</body>
+</html>
