@@ -7,25 +7,25 @@ const zlib = require('zlib');
 const path = require('path');
 const { pipeline } = require('stream');
 
-const server = http.createServer((req, res) => {
-  if (req.method === 'POST') {
+const handleFormParse = (req, res) => {
+  return new Promise((resolve, reject) => {
     const form = new formidable.IncomingForm();
 
-    form.parse(req, async(err, fields, files) => {
+    form.parse(req, (err, fields, files) => {
       if (err) {
-        console.error('An error occurred while parsing the form data. Detailed info: ', err);
-        res.statusCode = 500;
+        reject(new Error('An error occurred while parsing the form data. Detailed info: ', err));
         res.end('Something went wrong! Try to restart this application');
 
         return;
       }
 
+      const compressionType = fields.compression.toString();
       let compressionStream;
       let fullFileName;
       const file = files.file[0];
       const originalFilename = path.basename(file.originalFilename);
 
-      switch (fields.compression.toString()) {
+      switch (compressionType) {
         case 'gzip':
           compressionStream = zlib.createGzip();
           fullFileName = originalFilename + '.gz';
@@ -42,37 +42,56 @@ const server = http.createServer((req, res) => {
           break;
 
         default:
-          res.statusCode = 400;
+          reject(new Error('Invalid compression type'));
           res.end('Invalid compression type');
 
           return;
       }
 
-      const writeStream = fs.createWriteStream(path.join(__dirname, fullFileName));
-      const readStream = fs.createReadStream(file.filepath);
-
-      pipeline(readStream, compressionStream, writeStream, (error) => {
-        if (error) {
-          console.error('An error occurred during receiving compressed file. Detailed info: ', err);
-          res.statusCode = 500;
-          res.end('Something went wrong! Try to restart this application');
-        } else {
-          console.log('File received and compressed.');
-          res.writeHead(200, { 'Content-type': 'text/plain' });
-          res.end('File received and compressed. Check your working directory to see the file');
-        }
+      resolve({
+        file, fullFileName, compressionStream, compressionType,
       });
     });
+  });
+};
+
+const handleCompressionData = async (req, res) => {
+  const { file, fullFileName, compressionStream, compressionType } = await handleFormParse(req, res);
+  const readStream = fs.createReadStream(file.filepath);
+
+  res.setHeader('Content-Type', `application/${compressionType}`);
+  res.setHeader('Content-Disposition', `attachment; filename=${fullFileName}`);
+
+  pipeline(readStream, compressionStream, res, (error) => {
+    if (error) {
+      res.statusCode = 500;
+      res.end('Something went wrong! Try to restart this application');
+      throw new Error('An error occurred during receiving compressed file. Detailed info: ', error);
+    } else {
+      console.log('File received and compressed.');
+
+      res.end('File received and compressed.');
+    }
+  });
+};
+
+const handleReadHtmlFile = (res) => {
+  const readStream = fs.createReadStream(path.join(__dirname, 'index.html'));
+
+  res.writeHead(200, { 'Content-Type': 'text/html' });
+
+  pipeline(readStream, res, (err) => {
+    if (err) {
+      throw new Error('Something bad happened during reading html file!. Detailed info: ', err);
+    }
+  });
+};
+
+const server = http.createServer((req, res) => {
+  if (req.method === 'POST') {
+    handleCompressionData(req, res);
   } else {
-    const readStream = fs.createReadStream(path.join(__dirname, 'index.html'));
-
-    res.writeHead(200, { 'Content-Type': 'text/html' });
-
-    pipeline(readStream, res, (err) => {
-      if (err) {
-        console.error('Something bad happened during reading html file!. Detailed info: ', err);
-      }
-    });
+    handleReadHtmlFile(res);
   }
 });
 
