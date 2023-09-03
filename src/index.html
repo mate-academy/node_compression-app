@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>File Compression</title>
+  <script src="./script.js" defer></script>
+</head>
+<body>
+  <h1>File Compression</h1>
+    <form action="upload" method="post" id="upload-form" enctype="multipart/form-data">
+        <input type="file" id="file" name="file" accept=".txt" required>
+        <select name="compression">
+          <option value="gzip">GZIP</option>
+          <option value="brotli">BROTLI</option>
+          <option value="deflate">DEFLATE</option>
+        </select>
+        <button type="submit">Upload and Compress</button>
+    </form>
+
+    <div id="response"></div>
+</body>
+</html>
