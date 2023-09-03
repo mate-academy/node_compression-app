@@ -1,11 +1,14 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>File Compression</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>File Compression</title>
+  <script src="./script.js" defer></script>
 </head>
 <body>
-    <h1>File Compression</h1>
-    <form id="upload-form" enctype="multipart/form-data">
+  <h1>File Compression</h1>
+    <form action="upload" method="post" id="upload-form" enctype="multipart/form-data">
         <input type="file" id="file" name="file" accept=".txt" required>
         <select name="compression">
           <option value="gzip">GZIP</option>
@@ -16,30 +19,5 @@
     </form>
 
     <div id="response"></div>
-
-    <script>
-      const form = document.getElementById('upload-form');
-      const input = document.getElementById('file');
-      const responseDiv = document.getElementById('response');
-
-        form.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            responseDiv.textContent = 'Uploading and compressing...';
-
-            const formData = new FormData(form);
-            const response = await fetch('/upload', {
-                method: 'POST',
-                body: formData,
-            });
-
-            const result = await response.text();
-            responseDiv.textContent = result;
-
-            setTimeout(() => {
-              responseDiv.textContent = '';
-              input.value = '';
-            }, 5000);
-        });
-    </script>
 </body>
 </html>

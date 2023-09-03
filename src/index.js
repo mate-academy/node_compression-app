@@ -1,5 +1,8 @@
 'use strict';
 
+/* eslint-disable no-console */
+/* eslint-disable max-len */
+
 const formidable = require('formidable');
 const http = require('http');
 const fs = require('fs');
@@ -23,7 +26,9 @@ const handleFormParse = (req, res) => {
       let compressionStream;
       let fullFileName;
       const file = files.file[0];
-      const originalFilename = path.basename(file.originalFilename);
+      const originalFilename = path
+        .basename(file.originalFilename)
+        .slice(0, file.originalFilename.indexOf('.'));
 
       switch (compressionType) {
         case 'gzip':
@@ -55,7 +60,7 @@ const handleFormParse = (req, res) => {
   });
 };
 
-const handleCompressionData = async (req, res) => {
+const handleCompressionData = async(req, res) => {
   const { file, fullFileName, compressionStream, compressionType } = await handleFormParse(req, res);
   const readStream = fs.createReadStream(file.filepath);
 
@@ -69,8 +74,6 @@ const handleCompressionData = async (req, res) => {
       throw new Error('An error occurred during receiving compressed file. Detailed info: ', error);
     } else {
       console.log('File received and compressed.');
-
-      res.end('File received and compressed.');
     }
   });
 };
