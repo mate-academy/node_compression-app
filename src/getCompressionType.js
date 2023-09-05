@@ -15,8 +15,10 @@ const getCompressionType = (compressionType) => {
       return zlib.createDeflate();
 
     case GZIP:
-    default:
       return zlib.createGzip();
+
+    default:
+      throw new Error('Unsupported compression type');
   }
 };
 

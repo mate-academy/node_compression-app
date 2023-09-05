@@ -5,6 +5,7 @@ const http = require('http');
 const fs = require('fs');
 const multiparty = require('multiparty');
 const { getCompressionType } = require('./getCompressionType');
+const { generateUniqueFileName } = require('./generateUniqueFileName');
 
 const PORT = process.env.PORT || 3000;
 
@@ -15,14 +16,7 @@ const server = http.createServer((req, res) => {
     form.parse(req, (err, fields, files) => {
       if (err) {
         res.statusCode = 500;
-        res.end('Server Error');
-
-        return;
-      }
-
-      if (!files.file || !files.file[0]) {
-        res.statusCode = 400;
-        res.end('Bad Request: No file uploaded');
+        res.end('Error parsing form: ' + err.stack);
 
         return;
       }
@@ -30,10 +24,26 @@ const server = http.createServer((req, res) => {
       const file = files.file[0];
       const fileName = file.originalFilename;
 
+      if (!files.file || !file) {
+        res.statusCode = 400;
+        res.end('You didn\'t upload a file. Try again.');
+
+        return;
+      }
+
       const compressionMethod = fields.compression[0];
       const compression = getCompressionType(compressionMethod);
-      const compressedFilePath
-        = `${__dirname}/${fileName}.${compressionMethod}`;
+
+      if (!compression) {
+        res.statusCode = 400;
+        res.end('Requested compression method is not supported');
+
+        return;
+      }
+
+      const uniqueFileName
+        = generateUniqueFileName(fileName, compressionMethod);
+      const compressedFilePath = `${__dirname}/${uniqueFileName}`;
 
       const readStream = fs.createReadStream(file.path);
       const writeStream = fs.createWriteStream(compressedFilePath);
@@ -69,6 +79,8 @@ const server = http.createServer((req, res) => {
     });
   }
 });
+
+server.on('error', () => {});
 
 server.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
