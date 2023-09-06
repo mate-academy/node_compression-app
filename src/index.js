@@ -50,6 +50,16 @@ const server = http.createServer((req, res) => {
 
       readStream.pipe(compression).pipe(writeStream);
 
+      readStream.on('error', () => {
+        res.statusCode = 500;
+        res.end('Error reading file');
+      });
+
+      writeStream.on('error', () => {
+        res.statusCode = 500;
+        res.end('Error writing compressed file');
+      });
+
       readStream.on('end', () => {
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/octet-stream');
