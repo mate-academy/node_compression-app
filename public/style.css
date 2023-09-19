@@ -1,0 +1,42 @@
+body {
+  box-sizing: border-box;
+}
+
+.container {
+  width: fit-content;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  align-content: center;
+}
+
+.app > :not(:last-child) {
+  margin-bottom: 10px;
+}
+
+.app__select-file {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.app__name:first-child {
+  margin-right: 10px;
+}
+
+.app__select-format {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.app__select {
+  height: 21px;
+  width: 125px;
+}
+
+.app__button {
+  width: 100%;
+}

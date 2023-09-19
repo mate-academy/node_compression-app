@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Compression App</title>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Compression App</h1>
+
+      <form
+        class="app"
+        action="/compression"
+        method="post"
+        enctype="multipart/form-data"
+      >
+        <div class="app__select-file">
+          <p class="app__name">Select file</p>
+
+          <input type="file" class="app__input" name="file" required/>
+        </div>
+
+        <div class="app__select-format">
+          <p class="app__name">Select format</p>
+
+          <select name="format" id="format" class="app__select">
+            <option value=".gz" class="app__option" selected>Zlib</option>
+            <option value=".br" class="app__option">Brotli</option>
+            <option value=".dfl" class="app__option">Deflate</option>
+          </select>
+        </div>
+
+        <button type="submit" class="app__button">Compression</button>
+      </form>
+    </div>
+  </body>
+</html>
