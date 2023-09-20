@@ -75,6 +75,10 @@ server.on('request', (req, res) => {
         res.statusCode = 500;
         res.end('Internal server error');
       });
+
+      compressionStream().on('end', () => {
+        res.end();
+      });
     });
   }
 });
