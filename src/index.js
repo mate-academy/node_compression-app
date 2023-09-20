@@ -16,6 +16,8 @@ server.on('request', (req, res) => {
   const normalizedURL = new url.URL(req.url, `http://${req.headers.host}`);
   const pathName = normalizedURL.pathname.slice(1) || 'index.html';
   const filePath = path.resolve('public', pathName);
+  const compression = pathName === 'compression'
+    && req.method.toUpperCase() === 'POST';
 
   if (pathName === 'index.html') {
     if (!fs.existsSync(filePath)) {
@@ -39,8 +41,7 @@ server.on('request', (req, res) => {
     res.on('close', () => homePageStream.destroy());
   }
 
-  if (pathName === 'compression'
-    && req.method.toUpperCase() === 'POST') {
+  if (compression) {
     const form = new formidable.IncomingForm();
 
     form.on('error', (err) => {
