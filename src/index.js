@@ -56,33 +56,32 @@ server.on('request', (req, res) => {
       }
 
       const fileToCompressPath = file[0].filepath;
-      const fileExtension = file[0].mimetype;
       const compressionType = fields.format[0];
-      const newFileName = file[0].originalFilename
-        .replace(fileExtension, compressionType);
+      const newFileName = encodeURIComponent(
+        `${file[0].newFilename}` + `${compressionType}`);
 
-      res.setHeader('Content-Disposition'
-        , `attachment; filename=${newFileName}`);
       res.setHeader('Content-Type', 'application/octet-stream');
+
+      res.setHeader(
+        'Content-Disposition', `attachment; filename=${newFileName}`
+      );
 
       const fileStream = fs.createReadStream(fileToCompressPath);
       const compressionStream = getCompressionType(compressionType);
 
-      pipeline(fileStream, compressionStream, res, (error) => {
+      pipeline(fileStream, compressionStream(), res, (error) => {
         console.log(error);
 
         res.statusCode = 500;
         res.end('Internal server error');
       });
-
-      res.end();
-
-      console.log(compressionType);
     });
   }
 });
 
-server.on('error', () => { });
+server.on('error', (error) => {
+  console.error('Server error:', error);
+});
 
 server.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);

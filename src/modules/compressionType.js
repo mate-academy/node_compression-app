@@ -8,10 +8,10 @@ const getCompressionType = (compressionType) => {
       return zlib.createBrotliCompress;
 
     case '.dfl':
-      return zlib.createDeflate();
+      return zlib.createDeflate;
 
     default:
-      return zlib.createGzip();
+      return zlib.createGzip;
   }
 };
 
