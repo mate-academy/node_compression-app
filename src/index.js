@@ -44,6 +44,10 @@ server.on('request', (req, res) => {
 
       res.setHeader('Content-Type', 'application/octet-stream');
 
+      res.setHeader(
+        'Content-Disposition', `attachment; filename=${file + extension}`
+      );
+
       pipeline(file, compression, newFile, (error) => {
         if (error) {
           res.end(error);
