@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Compression App</title>
+  </head>
+  <body>
+    <style>
+      body {
+        font-family: "Arial", sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+      }
+
+      form {
+        max-width: 500px;
+        padding: 2em;
+        border: 1px solid green;
+        border-radius: 4px;
+        background-color: white;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 20px;
+        font-weight: bold;
+      }
+
+      button {
+        background-color: rgb(82, 255, 47);
+        font-weight: bold;
+        border-radius: 5%;
+        height: 30px;
+        width: 70px;
+      }
+
+      button:hover {
+        background-color: green;
+        transition: background-color 0.5s;
+      }
+    </style>
+    <form action="/upload" method="POST" enctype="multipart/form-data">
+      <label for="file">
+        Select file:
+        <input id="file" type="file" name="file" />
+      </label>
+
+      <label for="type">
+        Select type of compression:
+        <select name="compression">
+          <option value="gzip">Gzip</option>
+          <option value="br">Brotli</option>
+        </select></label>
+
+      <button type="submit">Upload</button>
+    </form>
+  </body>
