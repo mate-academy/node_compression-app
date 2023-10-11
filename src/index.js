@@ -43,17 +43,6 @@ const server = http.createServer(async(req, res) => {
         console.log(err);
       }
 
-      // try {
-      //   console.log(files.file[0].newFilename);
-
-      //   fs.renameSync(
-      //     path.join(uploadFolder, files.file[0].newFilename),
-      //     path.join(uploadFolder, files.file[0].originalFilename),
-      //   );
-      // } catch (error) {
-      //   console.log(error);
-      // };
-
       let compression;
       let extension = '';
 
