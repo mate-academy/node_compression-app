@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const formidable = require('formidable');
 const zlib = require('zlib');
+const { pipeline } = require('stream');
 
 const PORT = process.env.PORT || 8050;
 
@@ -73,18 +74,14 @@ const server = http.createServer(async(req, res) => {
       const file = fs
         .createReadStream(path.join(uploadFolder, files.file[0].newFilename));
 
-      file
-        .on('error', (error) => {
-          console.log('Error read\n', error);
-        })
-        .pipe(compression)
-        .on('error', (error) => {
-          console.log('Error compression\n', error);
-        })
-        .pipe(res)
-        .on('error', (error) => {
-          console.log('Error response\n', error);
-        });
+      pipeline(file, compression, res, (_error) => {
+        res.statusCode = 500;
+        res.end('Unable to read file');
+      });
+
+      res.on('close', () => {
+        file.destroy();
+      });
 
       res.statusCode = 200;
       res.end();
