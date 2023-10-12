@@ -9,7 +9,7 @@
 <body>
   <h1>Downlod file</h1>
   <form
-    action="/uplode"
+    action="/upload"
     method="post"
     enctype="multipart/form-data"
   >
@@ -17,14 +17,14 @@
       type="file"
       name="file"
       class="file_compression"
-      require
+      required
     >
 
     <select
       name="compression"
       id="compression"
       class="file_compression" 
-      equired
+      required
     >
       <option value="gzip">gzip</option>
       <option value="br">Brotli</option>

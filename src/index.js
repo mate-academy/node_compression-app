@@ -33,7 +33,7 @@ const server = http.createServer(async(req, res) => {
     return;
   }
 
-  if (filePath === 'uplode' && req.method.toUpperCase() === 'POST') {
+  if (filePath === 'upload' && req.method.toUpperCase() === 'POST') {
     const form = new formidable.IncomingForm();
     const uploadFolder = path.join(__dirname, '../tepm');
 
