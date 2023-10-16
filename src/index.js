@@ -4,6 +4,7 @@ const http = require('http');
 const path = require('path');
 const fs = require('fs');
 const zlib = require('zlib');
+const pipeline = require('pipeline');
 
 function compression() {
   const server = new http.Server();
@@ -26,12 +27,14 @@ function compression() {
 
     const gzip = zlib.createGzip();
 
-    fileStream
-      .on('error', () => {})
-      .pipe(gzip)
-      .on('error', () => {})
-      .pipe(res)
-      .on('error', () => {});
+    pipeline(fileStream, gzip, res, () => {});
+
+    // fileStream
+    //   .on('error', () => {})
+    //   .pipe(gzip)
+    //   .on('error', () => {})
+    //   .pipe(res)
+    //   .on('error', () => {});
 
     fileStream.on('error', (err) => {
       res.statusCode = 500;
