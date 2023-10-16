@@ -21,20 +21,28 @@ function compression() {
       return;
     }
 
-    res.setHeader('Content-Encoding', 'gzip');
+    // res.setHeader('Content-Encoding', 'gzip');
 
     const fileStream = fs.createReadStrem(filePath);
 
-    const gzip = zlib.createGzip();
+    switch (res.headers['content-encoding']) {
+      case 'br':
+        pipeline(fileStream, zlib.createBrotliCompress(), res, () => {});
+        break;
+      case 'gzip':
+        pipeline(fileStream, zlib.createGzip(), res, () => {});
+        break;
+      case 'deflate':
+        pipeline(fileStream, zlib.createDeflate(), res, () => {});
+        break;
+      default:
+        pipeline(fileStream, zlib.createGzip(), res, () => {});
+        break;
+    }
 
-    pipeline(fileStream, gzip, res, () => {});
+    // const gzip = zlib.createGzip();
 
-    // fileStream
-    //   .on('error', () => {})
-    //   .pipe(gzip)
-    //   .on('error', () => {})
-    //   .pipe(res)
-    //   .on('error', () => {});
+    // pipeline(fileStream, gzip, res, () => {});
 
     fileStream.on('error', (err) => {
       res.statusCode = 500;
