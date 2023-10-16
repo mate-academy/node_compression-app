@@ -21,8 +21,6 @@ function compression() {
       return;
     }
 
-    // res.setHeader('Content-Encoding', 'gzip');
-
     const fileStream = fs.createReadStrem(filePath);
 
     switch (res.headers['content-encoding']) {
@@ -39,10 +37,6 @@ function compression() {
         pipeline(fileStream, zlib.createGzip(), res, () => {});
         break;
     }
-
-    // const gzip = zlib.createGzip();
-
-    // pipeline(fileStream, gzip, res, () => {});
 
     fileStream.on('error', (err) => {
       res.statusCode = 500;
