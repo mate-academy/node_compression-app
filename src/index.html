@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Node compression app</title>
+</head>
+<body>
+  <form class="form" method="post" action="upload">
+    <label for="file">Select a file</label>
+    <input type="file" id="file" name="file" />
+
+    <fieldset>
+      <legend>Choose a compression type</legend>
+      <label><input type="radio" name="radio" value="gzip" /> gzip</label>
+      <label><input type="radio" name="radio" value="deflate" /> deflate</label>
+      <label><input type="radio" name="radio" value="br" /> br</label>
+    </fieldset>
+  </form>
+
+  <a href="http://" target="_blank">Download compressed file</a>
+
+</body>
+</html>
