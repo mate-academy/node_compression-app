@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>File Upload Example</title>
+</head>
+<body>
+<h1>Choose a File and Compression Type, then Upload</h1>
+<form
+  action="/upload"
+  method="post"
+  enctype="multipart/form-data"
+>
+  <input type="file" id="fileInput" name="file"/>
+  <select id="compressionType" name="select">
+    <option value="none">No Compression</option>
+    <option value="gzip">GZIP Compression</option>
+    <option value="deflate">Deflate Compression</option>
+  </select>
+  <button>Upload</button>
+</form>
+<div id="status"></div>
+</body>
+</html>
