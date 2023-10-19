@@ -1,36 +1,42 @@
 'use strict';
 
-import http from 'http'
-import fs from 'fs'
-import zlib from 'zlib'
-import formidable from 'formidable';
-
+const http = require('http');
+const fs = require('fs');
+const zlib = require('zlib');
+const formidable = require('formidable');
 const server = new http.Server();
 
-server.on('request', async (req, res) => {
+server.on('request', async(req, res) => {
   if (req.url === '/upload') {
     const form = formidable({});
-    let [fields, files] = await form.parse(req);
-    res.setHeader('Content-Type', 'text/plain');
+    const [fields, files] = await form.parse(req);
+
     res.setHeader('Content-Disposition', 'attachment; filename="text.txt"');
 
-    let compressionStream
-    switch (fields.compressionType[0]) {
+    let compressionStream;
+
+    switch (fields.select[0]) {
       case 'gzip':
         compressionStream = zlib.createGzip();
         res.setHeader('Content-Encoding', 'gzip');
         break;
       case 'deflate':
-        compressionStream = zlib.createDeflate()
+        compressionStream = zlib.createDeflate();
         res.setHeader('Content-Encoding', 'deflate');
         break;
     }
 
-    console.log('files.file[0].filepath', files.file[0].filepath);
-    console.log('compressionStream', compressionStream);
     const fileStream = fs.createReadStream(files.file[0].filepath);
 
-    fileStream.pipe(compressionStream).pipe(res);
+    fileStream
+      // eslint-disable-next-line
+      .on('error', (error) => console.log('fileStream ERROR', error))
+      .pipe(compressionStream)
+      // eslint-disable-next-line
+      .on('error', (error) => console.log('compressionStream ERROR', error))
+      .pipe(res)
+      // eslint-disable-next-line
+      .on('error', (error) => console.log('res ERROR', error));
   }
 
   if (req.url === '/') {
@@ -46,9 +52,11 @@ server.on('request', async (req, res) => {
 });
 
 server.on('error', (error) => {
-  console.log('error', error)
-})
+  // eslint-disable-next-line
+  console.log('server error', error);
+});
 
 server.listen(3000, () => {
+  // eslint-disable-next-line
   console.log('server running...');
 });

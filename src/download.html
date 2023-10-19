@@ -5,46 +5,19 @@
 </head>
 <body>
 <h1>Choose a File and Compression Type, then Upload</h1>
-<div>
-  <input type="file" id="fileInput" />
-  <select id="compressionType">
+<form
+  action="/upload"
+  method="post"
+  enctype="multipart/form-data"
+>
+  <input type="file" id="fileInput" name="file"/>
+  <select id="compressionType" name="select">
     <option value="none">No Compression</option>
     <option value="gzip">GZIP Compression</option>
     <option value="deflate">Deflate Compression</option>
   </select>
-  <button onclick="uploadFile()">Upload</button>
-</div>
+  <button>Upload</button>
+</form>
 <div id="status"></div>
-
-<script>
-  const uploadFile = () => {
-    const fileInput = document.getElementById('fileInput');
-    const file = fileInput.files[0];
-
-    if (!file) {
-      alert('Please choose a file before uploading.');
-      return;
-    }
-
-    const compressionType = document.getElementById('compressionType').value;
-
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('compressionType', compressionType);
-    fetch('http://localhost:3000/upload', {
-      method: 'POST',
-      body: formData
-    })
-      /*.then(response => response.json())
-      .then(data => {
-        document.getElementById('status').innerHTML = 'File uploaded successfully!';
-        console.log(data); // You can handle the server's response here if needed.
-      })*/
-      .catch(error => {
-        document.getElementById('status').innerHTML = 'Error uploading file: ' + error.message;
-        console.error('Error uploading file:', error);
-      });
-  }
-</script>
 </body>
 </html>
