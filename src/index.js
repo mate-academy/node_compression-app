@@ -1,23 +1,30 @@
 'use strict';
 
+const fs = require('fs');
 const http = require('http');
+const path = require('path');
 const zlib = require('zlib');
+const querystring = require('querystring');
 
 const server = http.createServer((req, res) => {
+  const url = new URL(req.url, `http://${req.headers.host}`);
+
   if (req.method === 'POST' && req.url === '/compress') {
     let fileToCompress = Buffer.alloc(0);
+    let fields = {};
 
     req.on('data', chunk => {
       fileToCompress = Buffer.concat([fileToCompress, chunk]);
     });
 
     req.on('end', () => {
-      let compression;
-      const fields = {
-        compression: 'gzip',
-      };
+      fields = querystring.parse(fileToCompress.toString());
 
-      switch (fields.compression) {
+      const selectedCompression = fields.compression || 'gzip';
+
+      let compression;
+
+      switch (selectedCompression) {
         case 'deflate':
           compression = zlib.createDeflate();
           break;
@@ -36,17 +43,20 @@ const server = http.createServer((req, res) => {
       });
 
       compression.write(fileToCompress, () => {
-        compression.flush(zlib.Z_SYNC_FLUSH, () => {
-          compression.end();
-
-          res.writeHead(200, {
-            'Content-Type': 'application/octet-stream',
-            'Content-Disposition': `attachment; filename="compressed_file.${fields.compression}"`,
-          });
-          compression.pipe(res);
-        });
+        compression.end();
+        compression.pipe(res);
       });
     });
+  } else if (url.pathname === '/') {
+    const fileName = url.pathname.slice(1) || 'index.html';
+    const filePath = path.resolve('public', fileName);
+    const fileStream = fs.createReadStream(filePath);
+
+    fileStream.pipe(res)
+      .on('error', error => {
+        res.writeHead(500);
+        res.end(`File Stream Error: ${error}`);
+      });
   } else {
     res.statusCode = 404;
     res.end('Not Found');
