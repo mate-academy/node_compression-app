@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <form
+    id="uploadForm"
+    enctype="multipart/form-data"
+    method="POST"
+    action="/compress"
+    style="display: flex; flex-direction: column; gap: 30px; align-items: center; width: max-content; margin: 0 auto;"
+  >
+    <label for="fileInput">Оберіть файл:</label>
+    <input type="file" id="fileInput" style="width: 180px;">
+
+    <label for="compressionType">Оберіть тип стиснення:</label>
+    <select id="compressionType">
+      <option value="gzip">GZIP</option>
+      <option value="deflate">Deflate</option>
+      <option value="raw">Raw</option>
+      <option value="zlib">Zlib</option>
+    </select>
+  
+    <button type="submit">Відправити</button>
+  </form>
+  
+</body>
+</html>
