@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en" style="height: 100%;">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="../src/request.js" defer></script>
+    <title>Compression app</title>
+  </head>
+  <body style="margin: 0; height: 100%;">
+    <h1>Compression app</h1>
+    <form
+      action="http://localhost:3005/"
+      class="form"
+    >
+      <fieldset>
+        <legend>Chose file</legend>
+
+        <div>
+          <input
+            type="radio"
+            id="test"
+            name="file"
+            value="test.txt"
+            checked
+          />
+          <label for="test">test.txt</label>
+        </div>
+
+        <div>
+          <input
+            type="radio"
+            id="test2"
+            name="file"
+            value="test2.txt"
+          />
+          <label for="test2">test2.txt</label>
+        </div>
+
+      </fieldset>
+
+      <fieldset>
+        <legend>Chose compression type</legend>
+
+        <div>
+          <input
+            type="radio"
+            id="gzip"
+            name="compression"
+            value="gzip"
+            checked
+          />
+          <label for="gzip">gzip</label>
+        </div>
+
+        <div>
+          <input
+            type="radio"
+            id="brotli"
+            name="compression"
+            value="brotli"
+          />
+          <label for="brotli">brotli</label>
+        </div>
+
+      </fieldset>
+
+      <button type="submit">Submit</button>
+    </form>
+  </body>
+</html>
