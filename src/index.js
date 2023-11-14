@@ -1,60 +1,46 @@
-'use strict';
+'use strict'
 
-const http = require('http');
-const fs = require('fs');
 const path = require('path');
+const multer = require('multer');
+const upload = multer({ dest: 'uploads/' });
+const express = require('express');
 const zlib = require('zlib');
+const app = express();
 
-const server = new http.Server();
+app.use('/', async(req, res, next) => {
+  const filePath = path.resolve('public', 'index.html');
 
-server.on('request', (req, res) => {
+  res.sendFile(filePath);
+});
+
+// app.use(express.urlencoded({ extended: true }));
+
+app.post('/uploads', upload.single('file'), (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const params = url.searchParams;
   const compressionType = params.get('compression');
-  const fileName = params.get('file') || 'index.html';
-  const filePath = path.resolve('public', fileName);
+  let gzip;
 
-  if (!fs.existsSync(filePath)) {
-    res.statusCode = 404;
-    res.end(filePath);
+  res.setHeader(
+    'Content-Disposition',
+    `attachment; filename=${req.file.filename}`,
+  );
 
-    return;
-  }
-
-  const fileStream = fs.createReadStream(filePath);
-
-  if (fileName === 'index.html') {
-    res.setHeader('Content-Type', 'text/html');
-    fileStream.pipe(res);
+  if (compressionType === 'gzip') {
+    gzip = zlib.createGzip();
   } else {
-    res.setHeader('Content-Disposition', `attachment; filename=${fileName}`);
-
-    let gzip;
-
-    if (compressionType === 'gzip') {
-      gzip = zlib.createGzip();
-    } else {
-      gzip = zlib.createBrotliCompress();
-    }
-
-    fileStream.pipe(gzip).pipe(res);
+    gzip = zlib.createBrotliCompress();
   }
 
-  fileStream.on('erroe', (err) => {
-    res.statusCode = 500;
-    res.end(err);
-  });
-
-  res.on('close', () => fileStream.destroy());
+  req.file.pipe(gzip).pipe(res);
+  // res.json({ message: 'File uploaded successfully!' });
 });
 
-server.on('error', () => {});
-
-server.listen(3005, () => {
+app.listen(3005, () => {
   // eslint-disable-next-line
   console.log('Server is running');
 });
 
 module.exports = {
-  server,
+  app,
 };

@@ -9,31 +9,21 @@
   <body style="margin: 0; height: 100%;">
     <h1>Compression app</h1>
     <form
-      action="http://localhost:3005/"
+      action="uploads/"
+      enctype="multipart/form-data"
+      method="post"
       class="form"
+      id="form"
     >
       <fieldset>
         <legend>Chose file</legend>
 
         <div>
           <input
-            type="radio"
-            id="test"
+            type="file"
+            id="file"
             name="file"
-            value="test.txt"
-            checked
           />
-          <label for="test">test.txt</label>
-        </div>
-
-        <div>
-          <input
-            type="radio"
-            id="test2"
-            name="file"
-            value="test2.txt"
-          />
-          <label for="test2">test2.txt</label>
         </div>
 
       </fieldset>
@@ -66,5 +56,6 @@
 
       <button type="submit">Submit</button>
     </form>
+    <script src='../src/scripts.js'></script>
   </body>
 </html>
