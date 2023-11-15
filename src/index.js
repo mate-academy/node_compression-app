@@ -1,39 +1,42 @@
-'use strict'
+'use strict';
 
 const path = require('path');
 const multer = require('multer');
-const upload = multer({ dest: 'uploads/' });
+const upload = multer({ storage: multer.memoryStorage() });
 const express = require('express');
 const zlib = require('zlib');
+const { Readable } = require('stream');
 const app = express();
 
-app.use('/', async(req, res, next) => {
+app.get('/', async(req, res) => {
   const filePath = path.resolve('public', 'index.html');
 
   res.sendFile(filePath);
 });
 
-// app.use(express.urlencoded({ extended: true }));
+app.post('/', upload.single('file'), (req, res) => {
+  const { compression } = req.body;
+  const { originalname, buffer } = req.file;
+  const compressionStreamType = (compressionType) => {
+    switch (compressionType) {
+      case 'brotli':
+        return zlib.createBrotliCompress();
 
-app.post('/uploads', upload.single('file'), (req, res) => {
-  const url = new URL(req.url, `http://${req.headers.host}`);
-  const params = url.searchParams;
-  const compressionType = params.get('compression');
-  let gzip;
+      default:
+        return zlib.createGzip();
+    }
+  };
 
-  res.setHeader(
-    'Content-Disposition',
-    `attachment; filename=${req.file.filename}`,
+  res.writeHead(200,
+    {
+      'Content-Disposition':
+        `attachment; filename=${originalname}.${compression}`
+    },
   );
 
-  if (compressionType === 'gzip') {
-    gzip = zlib.createGzip();
-  } else {
-    gzip = zlib.createBrotliCompress();
-  }
+  const fileStream = Readable.from(buffer);
 
-  req.file.pipe(gzip).pipe(res);
-  // res.json({ message: 'File uploaded successfully!' });
+  fileStream.pipe(compressionStreamType(compression).pipe(res));
 });
 
 app.listen(3005, () => {
