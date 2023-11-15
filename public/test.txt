@@ -1,0 +1,47 @@
+'use strict';
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
+const zlib = require('zlib');
+
+const server = new http.Server();
+
+server.on('request', (req, res) => {
+  const url = new URL(req.url, `http://${req.headers.host}`);
+  const fileName = url.pathname.slice(1) || 'index.html';
+  const filePath = path.resolve('public', fileName);
+
+  if (!fs.existsSync(filePath)) {
+    res.statusCode = 404;
+    res.end(filePath);
+
+    return;
+  }
+
+  //if (fileName === 'index.html') {
+    res.setHeader('Content-Encoding', 'gzip');
+  //}
+
+  const fileStream = fs.createReadStream(filePath);
+  const gzip = zlib.createGzip();
+
+  fileStream.pipe(gzip).pipe(res);
+
+  fileStream.on('erroe', (err) => {
+    res.statusCode = 500;
+    console.log(err);
+    res.end('Server Error');
+  })
+
+  res.on('close', () => fileStream.destroy());
+})
+
+server.on('error', () => {})
+
+server.listen(3005, () => {
+  console.log('Server is running');
+})
+
+module.exports = {
+  server,
+}
