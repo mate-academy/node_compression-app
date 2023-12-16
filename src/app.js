@@ -35,9 +35,7 @@ server.on('request', (req, res) => {
       }
 
       const { file } = files;
-      // console.log(files);
-      // console.log(file.originalPath);
-      // console.log(file);
+      const normalizedFile = file[0];
 
       const { compression } = fields;
 
@@ -48,17 +46,16 @@ server.on('request', (req, res) => {
         return;
       }
 
-      const readStream = fs.createReadStream(file.filepath);
-      console.log(readStream);
+      const readStream = fs.createReadStream(normalizedFile.filepath);
 
       readStream.on('error', () => {});
 
-      // readStream.pipe(fs.createWriteStream(`uploads/${file.filepath}`));
+      readStream.pipe(fs.createWriteStream(`uploads/${normalizedFile.originalFilename}`));
 
       let extension;
       let compressionStream;
 
-      switch (compression) {
+      switch (compression[0]) {
         case 'gzip':
           extension = '.gzip';
           compressionStream = zlib.createGzip();
@@ -78,7 +75,8 @@ server.on('request', (req, res) => {
           return;
       }
 
-      const fileName = file.originalFilename + extension;
+      const newFileName = normalizedFile.originalFilename.split('.')[0] + extension;
+      console.log(newFileName);
 
       pipeline(readStream, compressionStream, res, (error) => {
         if (error) {
@@ -88,12 +86,13 @@ server.on('request', (req, res) => {
           res.end(JSON.stringify(err));
         }
       });
-      res.setHeader('Content-Type', 'application/octet-stream');
 
+      res.setHeader('Content-Type', 'application/octet-stream');
       res.setHeader(
         'Content-Disposition',
-        `attachment; filename=${fileName}`
+        `attachment; filename=${newFileName}`
       );
+
       res.on('close', () => readStream.destroy());
 
       res.statusCode = 200;
