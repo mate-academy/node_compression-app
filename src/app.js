@@ -1,10 +1,3 @@
-/* eslint-disable no-unused-vars */
-/* eslint-disable curly */
-/* eslint-disable no-shadow */
-/* eslint-disable max-len */
-/* eslint-disable no-useless-return */
-/* eslint-disable padding-line-between-statements */
-/* eslint-disable no-console */
 'use strict';
 
 const PORT = process.env.PORT || 5001;
@@ -14,17 +7,12 @@ const zlib = require('zlib');
 const formidable = require('formidable');
 const fs = require('fs');
 const { pipeline } = require('stream');
-// const path = require('path');
 
 const server = new http.Server();
 
 server.on('request', (req, res) => {
-  // const myURL = new URL(req.url, `http://localhost:${PORT}`);
-  // console.log(normalizedURL);
-
   if (req.method === 'POST' && req.url === '/upload') {
     const form = new formidable.IncomingForm();
-    // console.log(form);
 
     form.parse(req, (err, fields, files) => {
       if (err) {
@@ -50,7 +38,9 @@ server.on('request', (req, res) => {
 
       readStream.on('error', () => {});
 
-      readStream.pipe(fs.createWriteStream(`uploads/${normalizedFile.originalFilename}`));
+      readStream.pipe(fs.createWriteStream(`
+        uploads/${normalizedFile.originalFilename}
+      `));
 
       let extension;
       let compressionStream;
@@ -75,8 +65,8 @@ server.on('request', (req, res) => {
           return;
       }
 
-      const newFileName = normalizedFile.originalFilename.split('.')[0] + extension;
-      console.log(newFileName);
+      const oldFileName = normalizedFile.originalFilename.split('.')[0];
+      const newFileName = oldFileName + extension;
 
       pipeline(readStream, compressionStream, res, (error) => {
         if (error) {
@@ -88,6 +78,7 @@ server.on('request', (req, res) => {
       });
 
       res.setHeader('Content-Type', 'application/octet-stream');
+
       res.setHeader(
         'Content-Disposition',
         `attachment; filename=${newFileName}`
@@ -140,5 +131,6 @@ server.on('request', (req, res) => {
 server.on('error', () => {});
 
 server.listen(PORT, () => {
+  // eslint-disable-next-line no-console
   console.log(`Server is running on port http://localhost:${PORT}`);
 });
