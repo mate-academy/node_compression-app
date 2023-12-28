@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Compression app</title>
+</head>
+<body>
+  <h1>Create archive file</h1>
+
+  <form action="/download" method="POST" enctype="multipart/form-data">
+    <label for="file"><i>Please, browse file:</i></label>
+    <br><br>
+    <input type="file" name="file" id="file" required>
+    <br><br>
+
+    <label for="archiveType"><i>Please, choose archive type:</i></label>
+    <br><br>
+    <select name="archiveType" id="archiveType">
+      <option value="br">Brotli (.br)</option>
+      <option value="gz">Gzip (.gz)</option>
+    </select>
+    <br><br><br>
+
+    <button type="submit"><strong>Send</strong></button>
+  </form>
+</body>
+</html>
