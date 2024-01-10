@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Compression app</title>
+
+    <script src="./scripts/main.js" defer type="commonJs"></script>
+  </head>
+  <body>
+    <form action="/send" method="POST" class="form" enctype="multipart/form-data">
+      <input type="file" name="file" class="input input--file" required>
+
+      <select name="compressType" class="input input--select" required>
+        <option value="brotli">Brotli</option>
+        <option value="deflate">Deflate</option>
+        <option value="gzip">Gzip</option>
+      </select>
+
+      <button type="submit">Submit</button>
+    </form>
+  </body>
+</html>
