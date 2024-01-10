@@ -21,18 +21,20 @@ const createServer = (PORT = process.env.PORT || 8080) => {
         return;
       }
 
-      const compressType = fields.compressType[0];
-      const file = files.file[0];
+      if (req.url === '/send' && req.method === 'POST') {
+        const compressType = fields.compressType[0];
+        const file = files.file[0];
 
-      const compressor = getCorrectCompressType(compressType);
-      const fileStream = fs.createReadStream(file.path);
+        const compressor = getCorrectCompressType(compressType);
+        const fileStream = fs.createReadStream(file.path);
 
-      res.writeHead(200, {
-        'Content-Type': 'application/octet-stream',
-        'Content-Disposition': `attachment; filename=${file.originalFilename}.${compressType}`,
-      });
+        res.writeHead(200, {
+          'Content-Type': 'application/octet-stream',
+          'Content-Disposition': `attachment; filename=${file.originalFilename}.${compressType}`,
+        });
 
-      fileStream.pipe(compressor).pipe(res);
+        fileStream.pipe(compressor).pipe(res);
+      }
     });
   });
 
