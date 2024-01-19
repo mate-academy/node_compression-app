@@ -61,10 +61,19 @@ describe('createServer', () => {
       server.close();
     });
 
+    it('should respond with 200 status code if trying to GET "/"', () => {
+      expect.assertions(1);
+
+      return axios.get(HOST)
+        .then(
+          (res) => expect(res.status).toBe(200)
+        );
+    });
+
     it('should respond with 404 status code if trying to access a non-existing route', async() => {
       expect.assertions(1);
 
-      return axios.post(`${HOST}/non-existing`)
+      return axios.get(`${HOST}/non-existing`)
         .catch(
           (err) => expect(err.response.status).toBe(404)
         );
