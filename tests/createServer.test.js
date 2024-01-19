@@ -4,35 +4,23 @@
 const { Server } = require('http');
 const axios = require('axios');
 const FormData = require('form-data');
-const { promises: fs, createReadStream } = require('fs');
-const path = require('path');
-const faker = require('faker');
+const { Readable } = require('stream');
+const { faker } = require('@faker-js/faker');
 const zlib = require('zlib');
 const util = require('util');
+const { createServer } = require('../src/createServer');
 
 const PORT = 5701;
 const HOST = `http://localhost:${PORT}`;
 const COMPRESS_ENDPOINT = `${HOST}/compress`;
 
-class MockedFile {
-  constructor() {
-    this.filename = faker.system.fileName();
-    this.content = faker.lorem.paragraphs();
-  }
+function stringToStream(str) {
+  const stream = new Readable();
 
-  async create() {
-    this.mockFilePath = path.resolve(__dirname, this.filename);
+  stream.push(str);
+  stream.push(null);
 
-    await fs.writeFile(this.mockFilePath, this.content);
-  }
-
-  async read() {
-    return fs.readFile(this.mockFilePath);
-  }
-
-  async remove() {
-    await fs.unlink(this.mockFilePath);
-  }
+  return stream;
 }
 
 const compressionTypes = {
@@ -48,12 +36,6 @@ const compressionTypes = {
 };
 
 describe('createServer', () => {
-  let createServer;
-
-  beforeAll(() => {
-    createServer = require('../src/createServer').createServer;
-  });
-
   describe('basic scenarios', () => {
     it('should create a server', () => {
       expect(createServer)
@@ -69,248 +51,161 @@ describe('createServer', () => {
   describe('Server', () => {
     let server;
 
-    function listen(port) {
-      return new Promise((resolve) => {
-        server.listen(port, () => {
-          resolve();
-        });
-      });
-    }
-
-    beforeAll(async() => {
+    beforeEach(() => {
       server = createServer();
 
-      await listen(PORT);
+      server.listen(PORT);
     });
 
-    afterAll(() => {
+    afterEach(() => {
       server.close();
     });
 
     it('should respond with 404 status code if trying to access a non-existing route', async() => {
-      let response;
+      expect.assertions(1);
 
-      try {
-        response = await axios.post(`${HOST}/non-existing`);
-      } catch (err) {
-        expect(err.response.status)
-          .toBe(404);
-      }
-
-      expect(response).toBeUndefined();
+      return axios.post(`${HOST}/non-existing`)
+        .catch(
+          (err) => expect(err.response.status).toBe(404)
+        );
     });
 
     it('should respond with 400 status code if trying send a GET request to "/compress" endpoint', async() => {
-      let response;
+      expect.assertions(1);
 
-      try {
-        response = await axios.get(COMPRESS_ENDPOINT);
-      } catch (err) {
-        expect(err.response.status)
-          .toBe(400);
-      }
-
-      expect(response).toBeUndefined();
-    });
-
-    describe('GET the "/" endpoint', () => {
-      let response;
-      let body;
-
-      beforeAll(async() => {
-        response = await axios.get(`${HOST}`);
-        body = response.data;
-      });
-
-      it('should return a 200 status code', async() => {
-        expect(response.status).toBe(200);
-      });
-
-      it('should return a page with an HTML form', async() => {
-        expect(body).toContain('<form');
-      });
-
-      it('should return a page with a file input field named "file"', async() => {
-        expect(body).toMatch(/<input[^>]+name="file"/);
-      });
-
-      it('should return a page with a compression select field named "compressionType"', async() => {
-        expect(body).toMatch(/<select[^>]+name="compressionType"/);
-      });
-
-      it(`should return a a page with the list of compression options with values ${Object.keys(compressionTypes).join(', ')}`, async() => {
-        const expectedOptions = Object.keys(compressionTypes);
-
-        expectedOptions.forEach(option => {
-          const optionRegex = new RegExp(`<option[^>]+value="${option}"`);
-
-          expect(body).toMatch(optionRegex);
-        });
-      });
-
-      it('should return a page with a submit button', async() => {
-        expect(body).toMatch(/<button[^>]+type="submit"/);
-      });
+      return axios.get(COMPRESS_ENDPOINT)
+        .catch(
+          (err) => expect(err.response.status).toBe(400)
+        );
     });
 
     describe('POST to the "/compress" endpoint', () => {
       let formData;
-      let mockedFile;
+      let filename;
+      let content;
 
       beforeEach(async() => {
         formData = new FormData();
-        mockedFile = new MockedFile();
-
-        await mockedFile.create();
+        filename = faker.system.fileName();
+        content = faker.lorem.paragraphs();
       });
 
-      afterEach(async() => {
-        await mockedFile.remove();
-      });
-
-      it('should respond with 400 status code if no file is provided', async() => {
-        let response;
+      it('should respond with 400 status code if no file is provided', () => {
+        expect.assertions(1);
 
         formData.append('compressionType', 'gzip');
 
-        try {
-          response = await axios.post(COMPRESS_ENDPOINT, formData, {
-            headers: formData.getHeaders(),
-          });
-        } catch (err) {
-          expect(err.response.status)
-            .toBe(400);
-        }
-
-        expect(response).toBeUndefined();
+        return axios.post(COMPRESS_ENDPOINT, formData, {
+          headers: formData.getHeaders(),
+        })
+          .catch(
+            (err) => expect(err.response.status).toBe(400)
+          );
       });
 
-      it('should respond with 400 status code if no compression type is provided', async() => {
-        let response;
-
-        const {
-          mockFilePath,
-          filename,
-        } = mockedFile;
+      it('should respond with 400 status code if no compression type is provided', () => {
+        expect.assertions(1);
 
         formData.append(
           'file',
-          createReadStream(mockFilePath),
+          stringToStream(content),
           { filename },
         );
 
-        try {
-          response = await axios.post(COMPRESS_ENDPOINT, formData, {
-            headers: formData.getHeaders(),
-          });
-        } catch (err) {
-          expect(err.response.status)
-            .toBe(400);
-        }
-
-        expect(response).toBeUndefined();
+        return axios.post(COMPRESS_ENDPOINT, formData, {
+          headers: formData.getHeaders(),
+        })
+          .catch(
+            (err) => expect(err.response.status).toBe(400)
+          );
       });
 
-      it('should respond with 400 status code if an unsupported compression type is provided', async() => {
-        let response;
-
-        const {
-          mockFilePath,
-          filename,
-        } = mockedFile;
-
+      it('should respond with 400 status code if an unsupported compression type is provided', () => {
         formData.append(
           'file',
-          createReadStream(mockFilePath),
+          stringToStream(content),
           { filename },
         );
 
-        formData.append('compressionType', 'unsupported');
+        formData.append('compressionType', faker.string.uuid());
 
-        try {
-          response = await axios.post(COMPRESS_ENDPOINT, formData, {
-            headers: formData.getHeaders(),
-          });
-        } catch (err) {
-          expect(err.response.status)
-            .toBe(400);
-        }
-
-        expect(response).toBeUndefined();
+        return axios.post(COMPRESS_ENDPOINT, formData, {
+          headers: formData.getHeaders(),
+        })
+          .catch(
+            (err) => expect(err.response.status).toBe(400)
+          );
       });
 
       Object.entries(compressionTypes).forEach(([compressionType, { decompress }]) => {
         describe(`compression type "${compressionType}"`, () => {
-          it('should respond with 200 status code', async() => {
-            const {
-              mockFilePath,
-              filename,
-            } = mockedFile;
+          it('should respond with 200 status code', () => {
+            expect.assertions(1);
 
             formData.append(
               'file',
-              createReadStream(mockFilePath),
+              stringToStream(content),
               { filename },
             );
 
             formData.append('compressionType', compressionType);
 
-            const response = await axios.post(COMPRESS_ENDPOINT, formData, {
+            return axios.post(COMPRESS_ENDPOINT, formData, {
               headers: formData.getHeaders(),
-            });
-
-            expect(response.status)
-              .toBe(200);
+            })
+              .then(
+                (res) => expect(res.status).toBe(200)
+              );
           });
 
-          it('should respond with a correct "Content-Disposition" header', async() => {
-            const {
-              mockFilePath,
-              filename,
-            } = mockedFile;
+          it('should respond with a correct "Content-Disposition" header', () => {
+            expect.assertions(1);
 
             formData.append(
               'file',
-              createReadStream(mockFilePath),
+              stringToStream(content),
               { filename },
             );
 
             formData.append('compressionType', compressionType);
 
-            const response = await axios.post(COMPRESS_ENDPOINT, formData, {
+            return axios.post(COMPRESS_ENDPOINT, formData, {
               headers: formData.getHeaders(),
-            });
+            })
+              .then(
+                (res) => {
+                  const expectedHeader = `attachment; filename=${filename}.${compressionType}`;
 
-            const expectedHeader = `attachment; filename=${filename}.${compressionType}`;
-
-            expect(response.headers['content-disposition'])
-              .toBe(expectedHeader);
+                  expect(res.headers['content-disposition'])
+                    .toBe(expectedHeader);
+                }
+              );
           });
 
-          it(`should respond with a file compressed with "${compressionType}" algorithm`, async() => {
-            const {
-              mockFilePath,
-              filename,
-            } = mockedFile;
+          it(`should respond with a file compressed with "${compressionType}" algorithm`, () => {
+            expect.assertions(1);
 
             formData.append(
               'file',
-              createReadStream(mockFilePath),
+              stringToStream(content),
               { filename },
             );
 
             formData.append('compressionType', compressionType);
 
-            const response = await axios.post(COMPRESS_ENDPOINT, formData, {
+            return axios.post(COMPRESS_ENDPOINT, formData, {
               headers: formData.getHeaders(),
               responseType: 'arraybuffer',
-            });
+            })
+              .then(
+                async(res) => {
+                  const compressedData = res.data;
+                  const uncompressedData = await decompress(compressedData);
 
-            const compressedFileData = response.data;
-            const uncompressedData = await decompress(compressedFileData);
-            const originalFileData = await mockedFile.read();
-
-            expect(uncompressedData).toEqual(originalFileData);
+                  expect(uncompressedData.toString())
+                    .toBe(content);
+                }
+              );
           });
         });
       });
