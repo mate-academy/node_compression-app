@@ -70,7 +70,7 @@ describe('createServer', () => {
         );
     });
 
-    it('should respond with 404 status code if trying to access a non-existing route', async() => {
+    it('should respond with 404 status code if trying to access a non-existing route', () => {
       expect.assertions(1);
 
       return axios.get(`${HOST}/non-existing`)
@@ -79,7 +79,7 @@ describe('createServer', () => {
         );
     });
 
-    it('should respond with 400 status code if trying send a GET request to "/compress" endpoint', async() => {
+    it('should respond with 400 status code if trying send a GET request to "/compress" endpoint', () => {
       expect.assertions(1);
 
       return axios.get(COMPRESS_ENDPOINT)
