@@ -73,7 +73,7 @@ describe('createServer', () => {
     it('should respond with 404 status code if trying to access a non-existing route', () => {
       expect.assertions(1);
 
-      return axios.get(`${HOST}/non-existing`)
+      return axios.get(`${HOST}/${faker.string.uuid()}`)
         .catch(
           (err) => expect(err.response.status).toBe(404)
         );
