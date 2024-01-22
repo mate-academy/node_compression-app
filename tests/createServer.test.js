@@ -12,7 +12,6 @@ const { createServer } = require('../src/createServer');
 
 const PORT = 5701;
 const HOST = `http://localhost:${PORT}`;
-const COMPRESS_ENDPOINT = `${HOST}/compress`;
 
 function stringToStream(str) {
   const stream = new Readable();
@@ -82,7 +81,7 @@ describe('createServer', () => {
     it('should respond with 400 status code if trying send a GET request to "/compress" endpoint', () => {
       expect.assertions(1);
 
-      return axios.get(COMPRESS_ENDPOINT)
+      return axios.get(`${HOST}/compress`)
         .catch(
           (err) => expect(err.response.status).toBe(400)
         );
@@ -99,53 +98,6 @@ describe('createServer', () => {
         content = faker.lorem.paragraphs();
       });
 
-      it('should respond with 400 status code if no file is provided', () => {
-        expect.assertions(1);
-
-        formData.append('compressionType', 'gzip');
-
-        return axios.post(COMPRESS_ENDPOINT, formData, {
-          headers: formData.getHeaders(),
-        })
-          .catch(
-            (err) => expect(err.response.status).toBe(400)
-          );
-      });
-
-      it('should respond with 400 status code if no compression type is provided', () => {
-        expect.assertions(1);
-
-        formData.append(
-          'file',
-          stringToStream(content),
-          { filename },
-        );
-
-        return axios.post(COMPRESS_ENDPOINT, formData, {
-          headers: formData.getHeaders(),
-        })
-          .catch(
-            (err) => expect(err.response.status).toBe(400)
-          );
-      });
-
-      it('should respond with 400 status code if an unsupported compression type is provided', () => {
-        formData.append(
-          'file',
-          stringToStream(content),
-          { filename },
-        );
-
-        formData.append('compressionType', faker.string.uuid());
-
-        return axios.post(COMPRESS_ENDPOINT, formData, {
-          headers: formData.getHeaders(),
-        })
-          .catch(
-            (err) => expect(err.response.status).toBe(400)
-          );
-      });
-
       Object.entries(compressionTypes).forEach(([compressionType, { decompress }]) => {
         describe(`compression type "${compressionType}"`, () => {
           it('should respond with 200 status code', () => {
@@ -159,7 +111,7 @@ describe('createServer', () => {
 
             formData.append('compressionType', compressionType);
 
-            return axios.post(COMPRESS_ENDPOINT, formData, {
+            return axios.post(`${HOST}/compress`, formData, {
               headers: formData.getHeaders(),
             })
               .then(
@@ -178,7 +130,7 @@ describe('createServer', () => {
 
             formData.append('compressionType', compressionType);
 
-            return axios.post(COMPRESS_ENDPOINT, formData, {
+            return axios.post(`${HOST}/compress`, formData, {
               headers: formData.getHeaders(),
             })
               .then(
@@ -202,20 +154,68 @@ describe('createServer', () => {
 
             formData.append('compressionType', compressionType);
 
-            return axios.post(COMPRESS_ENDPOINT, formData, {
+            return axios.post(`${HOST}/compress`, formData, {
               headers: formData.getHeaders(),
               responseType: 'arraybuffer',
             })
-              .then(
-                async(res) => {
-                  const compressedData = res.data;
-                  const uncompressedData = await decompress(compressedData);
-
-                  expect(uncompressedData.toString())
-                    .toBe(content);
-                }
-              );
+              .then((res) => decompress(res.data))
+              .then((uncompressedData) => {
+                expect(uncompressedData.toString())
+                  .toBe(content);
+              });
           });
+        });
+      });
+
+      describe('ivalid form data scenarios', () => {
+        it('should respond with 400 status code if no file is provided', () => {
+          expect.assertions(1);
+
+          formData.append(
+            'compressionType',
+            faker.helpers.arrayElement(Object.keys(compressionTypes)),
+          );
+
+          return axios.post(`${HOST}/compress`, formData, {
+            headers: formData.getHeaders(),
+          })
+            .catch(
+              (err) => expect(err.response.status).toBe(400)
+            );
+        });
+
+        it('should respond with 400 status code if no compression type is provided', () => {
+          expect.assertions(1);
+
+          formData.append(
+            'file',
+            stringToStream(content),
+            { filename },
+          );
+
+          return axios.post(`${HOST}/compress`, formData, {
+            headers: formData.getHeaders(),
+          })
+            .catch(
+              (err) => expect(err.response.status).toBe(400)
+            );
+        });
+
+        it('should respond with 400 status code if an unsupported compression type is provided', () => {
+          formData.append(
+            'file',
+            stringToStream(content),
+            { filename },
+          );
+
+          formData.append('compressionType', faker.string.uuid());
+
+          return axios.post(`${HOST}/compress`, formData, {
+            headers: formData.getHeaders(),
+          })
+            .catch(
+              (err) => expect(err.response.status).toBe(400)
+            );
         });
       });
     });
