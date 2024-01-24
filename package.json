@@ -6,6 +6,7 @@
   "scripts": {
     "init": "mate-scripts init",
     "start": "node src/index.js",
+    "dev": "nodemon main",
     "lint": "mate-scripts lint",
     "test:only": "mate-scripts test",
     "update": "mate-scripts update",
@@ -24,9 +25,13 @@
     "eslint-plugin-node": "^8.0.1",
     "expect": "^29.7.0",
     "form-data": "^4.0.0",
-    "jest": "^29.7.0"
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.3"
   },
   "mateAcademy": {
     "projectType": "javascript"
+  },
+  "dependencies": {
+    "formidable": "^3.5.1"
   }
 }
