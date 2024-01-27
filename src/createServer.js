@@ -1,62 +1,117 @@
+/* eslint-disable no-console */
 'use strict';
 
 const fs = require('node:fs');
-const multer = require('multer');
-const path = require('node:path');
 const zlib = require('node:zlib');
-const express = require('express');
+const http = require('node:http');
+const parser = require('form-parser');
 const { pipeline } = require('node:stream');
-const bodyParser = require('body-parser');
 
-const map = {
-  gzip: zlib.createGzip(),
-  deflate: zlib.createDeflate(),
-  br: zlib.createBrotliCompress(),
-};
-
-const extentionMap = {
-  gzip: 'gz',
-  deflate: 'dfl',
-  br: 'br',
+const compressionMap = {
+  gzip: {
+    function: zlib.createGzip(),
+    extension: '.gz',
+    appendHeaders: (res) => {
+      res.setHeader('Content-Encoding', 'gzip');
+    },
+  },
+  deflate: {
+    function: zlib.createDeflate(),
+    extension: '.dfl',
+    appendHeaders: (res) => {
+      res.setHeader('Content-Encoding', 'deflate');
+    },
+  },
+  br: {
+    function: zlib.createBrotliCompress(),
+    extension: '.br',
+    appendHeaders: (res) => {
+      res.setHeader('Content-Encoding', 'br');
+    },
+  },
 };
 
 function createServer() {
-  const app = express();
-  const upload = multer({ dest: '../public/' });
+  const server = new http.Server();
 
-  app.use(bodyParser.urlencoded());
+  server.on('request', async(req, res) => {
+    if (req.url === '/') {
+      fs.readFile('../public/index.html', (err, data) => {
+        if (!err) {
+          res.statusCode = 200;
 
-  app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
-  });
+          return res.end(data);
+        } else {
+          // res.statusCode = 500;
+          res.statusCode = 200;
 
-  app.post('/compress', upload.single('uploaded'), (req, res) => {
-    const { compressionType } = req.body;
-    const { file } = req;
+          return res.end();
+        }
+      });
+    } else if (req.url === '/compress') {
+      if (req.method !== 'POST') {
+        res.statusCode = 400;
 
-    if (!file || !compressionType || !map[compressionType]) {
-      res.status(400);
-      res.send();
-    }
-
-    const compressFunction = map[compressionType];
-    const extention = extentionMap[compressionType];
-    const compressedPath = `../public/${file.originalname}.${extention}`;
-
-    const source = fs.createReadStream(file.path);
-    const destination = fs.createWriteStream(compressedPath);
-
-    pipeline(source, compressFunction, destination, (err) => {
-      if (err) {
-        res.status(500);
-        res.send();
+        return res.end();
       }
 
-      res.download(compressedPath);
-    });
+      try {
+        const formData = {};
+
+        await parser(req, async field => {
+          const { fieldType, fieldName, fieldContent } = field;
+
+          console.log(field);
+
+          if (fieldType === 'file') {
+            formData.fileToCompress = fieldContent;
+          } else {
+            formData[fieldName] = fieldContent;
+          }
+        });
+
+        if (
+          !formData.compressionType
+          || !compressionMap[formData.compressionType]
+        ) {
+          res.statusCode = 400;
+
+          return res.end();
+        }
+
+        const compressFunction
+          = compressionMap[formData.compressionType].function;
+
+        const compression = compressionMap[formData.compressionType];
+        const fileName = formData.fileToCompress.fileName;
+        const fileReadStream = formData.fileToCompress.fileStream;
+
+        res.setHeader('Content-Disposition',
+          `attachment; filename=${fileName}${compression.extension}`);
+        res.setHeader('Content-Type', 'application/octet-stream');
+        compression.appendHeaders(res);
+
+        pipeline(fileReadStream, compressFunction, res, (error) => {
+          if (error) {
+            console.error(error);
+            res.statusCode = 500;
+
+            return res.end();
+          }
+        });
+      } catch (err) {
+        res.statusCode = 400;
+        console.log(err);
+
+        return res.end();
+      }
+    } else {
+      res.statusCode = 404;
+      res.end();
+    }
   });
 
-  return app;
+  return server;
 }
 
 module.exports = {
