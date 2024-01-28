@@ -25,12 +25,15 @@ function stringToStream(str) {
 const compressionTypes = {
   gzip: {
     decompress: util.promisify(zlib.gunzip),
+    extention: '.gz',
   },
   deflate: {
     decompress: util.promisify(zlib.inflate),
+    extention: '.dfl',
   },
   br: {
     decompress: util.promisify(zlib.brotliDecompress),
+    extention: '.br',
   },
 };
 
@@ -135,7 +138,7 @@ describe('createServer', () => {
             })
               .then(
                 (res) => {
-                  const expectedHeader = `attachment; filename=${filename}.${compressionType}`;
+                  const expectedHeader = `attachment; filename=${filename}${compressionTypes[compressionType].extention}`;
 
                   expect(res.headers['content-disposition'])
                     .toBe(expectedHeader);
@@ -167,7 +170,7 @@ describe('createServer', () => {
         });
       });
 
-      describe('ivalid form data scenarios', () => {
+      describe('invalid form data scenarios', () => {
         it('should respond with 400 status code if no file is provided', () => {
           expect.assertions(1);
 

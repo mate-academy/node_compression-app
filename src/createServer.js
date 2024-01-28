@@ -1,9 +1,16 @@
 'use strict';
 
-function createServer() {
-  /* Write your code here */
-  // Return instance of http.Server class
-}
+const http = require('node:http');
+
+const { handleRequest } = require('./controllers/app.controller');
+
+const createServer = () => {
+  const server = http.createServer();
+
+  server.on('request', handleRequest);
+
+  return server;
+};
 
 module.exports = {
   createServer,
