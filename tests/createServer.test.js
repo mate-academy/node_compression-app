@@ -170,7 +170,7 @@ describe('createServer', () => {
         });
       });
 
-      describe('ivalid form data scenarios', () => {
+      describe('invalid form data scenarios', () => {
         it('should respond with 400 status code if no file is provided', () => {
           expect.assertions(1);
 
