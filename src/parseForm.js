@@ -10,18 +10,16 @@ module.exports = {
 async function parseForm(request) {
   const form = formidable({
     keepExtensions: true,
-    uploadDir: './public',
+    uploadDir: './temp',
     createDirsFromUploads: true,
   });
+
   const [fields, files] = await form.parse(request);
   const result = {
     fileName: null,
     filePath: null,
     compressionType: null,
   };
-
-  console.dir(fields);
-  console.dir(files);
 
   if ('compressionType' in fields
     && Array.isArray(fields.compressionType)) {
@@ -33,8 +31,6 @@ async function parseForm(request) {
     result.fileName = files.file[0].originalFilename || null;
     result.filePath = files.file[0].filepath || null;
   }
-
-  console.dir(result);
 
   return result;
 }
