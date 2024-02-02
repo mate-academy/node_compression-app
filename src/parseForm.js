@@ -32,5 +32,7 @@ async function parseForm(request) {
     result.filePath = files.file[0].filepath || null;
   }
 
+  console.dir(result);
+
   return result;
 }

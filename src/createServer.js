@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const { parseForm } = require('./parseForm');
-const { sendCompressedFile } = require('./sendFile');
+const { sendCompressedFileByStream } = require('./sendFile');
 
 module.exports = {
   createServer,
@@ -26,7 +26,7 @@ function createServer () {
         res.setHeader('Content-Encoding', 'gzip');
         res.statusCode = 200;
 
-        sendCompressedFile(
+        sendCompressedFileByStream(
           res,
           path.resolve('public', 'index.html'),
           'gzip',
@@ -66,7 +66,7 @@ function createServer () {
             + `filename=${fileName}.${compressionType}`,
           );
 
-          sendCompressedFile(
+          sendCompressedFileByStream(
             res,
             filePath,
             compressionType,
