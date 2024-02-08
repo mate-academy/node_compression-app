@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+  <title>Node.js Compression App</title>
+</head>
+<body>
+  <h1 class="mt-5 text-center">Compress your file</h1>
+
+  <form
+    action="/compress"
+    enctype="multipart/form-data"
+    method="post"
+    id="form"
+    class="p-5 mx-auto"
+    style="max-width:500px;"
+  >
+    <div class="mb-3">
+      <label for="file" class="form-label">Attach your file</label>
+      <input type="file" name="file" id="file" class="form-control">
+    </div>
+
+    <div class="mb-3">
+      <label for="compressionType" class="form-label">Select compression type</label>
+      <select name="compressionType" id="compressionType" class="form-select">
+        <option value="" selected>Choose compression type</option>
+        <option value="gzip">gzip</option>
+        <option value="deflate">deflate</option>
+        <option value="br">br</option>
+      </select>
+    </div>
+
+    <input type="submit" value="Get compressed file" class="btn btn-primary"/>
+  </form>
+</body>
+</html>
