@@ -108,10 +108,12 @@ function createServer() {
           ? zlib.createDeflate()
           : zlib.createBrotliCompress();
 
-      pipeline(fileStream, compressionStream, res, () => {
-        res.setHeader('Content-Type', 'text/plain');
-        res.statusCode = 500;
-        res.end('Server error');
+      pipeline(fileStream, compressionStream, res, (error) => {
+        if (error) {
+          res.setHeader('Content-Type', 'text/plain');
+          res.statusCode = 500;
+          res.end('Server error');
+        }
       });
 
       res.on('close', () => {
