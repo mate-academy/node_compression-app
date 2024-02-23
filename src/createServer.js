@@ -15,10 +15,7 @@ function createServer() {
       res.setHeader('Content-type', 'text/html');
       file.pipe(res);
     } else if (req.method === 'POST' && req.url === '/compress') {
-      const form = new formidable.IncomingForm({
-        // uploadDir: `${__dirname}/../uploads`,
-        // keepExtensions: true,
-      });
+      const form = new formidable.IncomingForm();
 
       form.parse(req, (err, fields, files) => {
         if (err) {
@@ -33,8 +30,6 @@ function createServer() {
         const filePath = file.filepath;
         const fileName = file.originalFilename;
 
-        console.log(compressionType);
-
         if (!files.hasOwnProperty('file')
           || !fields.hasOwnProperty('compressionType')) {
           res.writeHead(400, { 'Content-Type': 'text/plain' });
@@ -46,7 +41,6 @@ function createServer() {
         const input = fs.createReadStream(filePath);
 
         let compressStream;
-
 
         switch (compressionType) {
           case 'gzip':
