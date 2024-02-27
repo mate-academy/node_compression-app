@@ -1,0 +1,1 @@
+export const formElement = document.getElementById('form');
