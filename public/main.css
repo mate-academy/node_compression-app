@@ -1,50 +1,65 @@
 :root {
-  --cream: #696D7D; /* Use the dark gray as the base color now */
-  --light-green: #68B0AB; /* Swap teal and light green */
-  --light-teal: #C8D5B9; /* Swap light teal and light green */
-  --teal: #8FC0A9; /* Swap teal and light teal */
-  --white: #ffffff; /* Use the cream color for text */
+  --cream: #696D7D;
+  --light-green: #68B0AB;
+  --light-teal: #C8D5B9;
+  --teal: #8FC0A9;
+  --white: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 html {
   font-family: "Montserrat", sans-serif;
   font-weight: 300;
+  color: var(--white);
 }
 
 body {
   background: linear-gradient(135deg, var(--light-green) 0%, var(--light-teal) 100%);
-  color: var(--white);
+
   display: flex;
   justify-content: center;
   align-items: center;
+  gap: 20px;
   flex-direction: column;
   min-height: 100dvh;
-  margin: 0;
+
   padding-inline: 20px;
-  text-align: center;
-  overflow-x: hidden;
 }
 
 .header {
+  text-align: center;
   color: var(--cream);
-  margin-bottom: 20px;
 }
 
 .description {
-  margin-bottom: 30px;
-  color: var(--white);
+  text-align: center;
+  margin-bottom: 10px;
   font-size: 18px;
-  max-width: 600px;
+  max-width: 700px;
 }
 
-.form-container {
-  background-color: rgba(255, 255, 255, 0.8);
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background-color: var(--white);
   padding: 30px;
   border-radius: 15px;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-  box-sizing: border-box;
   width: 100%;
   max-width: 500px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  border: none;
 }
 
 input[type="file"] {
@@ -55,43 +70,6 @@ input[type="file"] {
   position: absolute;
 }
 
-input[type="file"] + label {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  box-sizing: border-box;
-
-  height: 50px;
-  background-color: var(--cream);
-  color: var(--white);
-  border: 2px solid var(--teal);
-  border-radius: 5px;
-  cursor: pointer;
-  text-align: center;
-  font-size: 16px;
-  font-weight: 400;
-  padding-inline: 40px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-input[type="file"]:disabled + label {
-  opacity: 0.6;
-  pointer-events: none;
-  cursor: not-allowed;
-}
-
-input[type="file"] + label:hover {
-  background-color: var(--light-teal);
-  color: var(--cream);
-}
-
-.form-group {
-  border: none;
-  position: relative;
-}
-
 label {
   display: block;
   margin-bottom: 10px;
@@ -100,9 +78,25 @@ label {
   color: var(--teal);
 }
 
-input[type="file"], select {
-  box-sizing: border-box;
-  width: 100%;
+.file-label {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+input[type="file"]:disabled + .file-label {
+  opacity: 0.6;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+input[type="file"]+ .file-label:hover {
+  background-color: var(--light-teal);
+  color: var(--cream);
+}
+
+.file-label,
+select {
   height: 50px;
   padding: 12px;
   border: 2px solid var(--teal);
@@ -112,13 +106,16 @@ input[type="file"], select {
   color: var(--white);
   outline: none;
   font-weight: 500;
-  font-size: 16px;
+}
+
+select {
+  font-size: 18px;
 }
 
 .submit-btn {
   background-color: var(--teal);
   color: var(--white);
-  padding: 12px 25px;
+  padding: 12px;
   border: none;
   border-radius: 5px;
   cursor: pointer;
@@ -163,16 +160,17 @@ input[type="file"], select {
   display: block;
 }
 
-  @keyframes show-error {
-    from {
-      opacity: 0;
-      transform: translateY(-200%);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0)
-    }
+@keyframes show-error {
+  from {
+    opacity: 0;
+    transform: translateY(-200%);
   }
+
+  to {
+    opacity: 1;
+    transform: translateY(0)
+  }
+}
 
 
 @keyframes hide-error {
@@ -187,12 +185,23 @@ input[type="file"], select {
   }
 }
 
+.error-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+
+  z-index: 2;
+  position: fixed;
+  top: 10px;
+  right: 10px;
+}
+
 .error-popup.hide {
   animation: hide-error 0.5s forwards !important;
 }
 
 .error-popup {
-  box-sizing: border-box;
+  position: relative;
   animation: 0.3s forwards show-error;
   display: flex;
   align-items: center;
@@ -206,10 +215,10 @@ input[type="file"], select {
   color: var(--white);
   padding: 22px;
   border-radius: 5px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   font-size: 12px;
   font-weight: 500;
-  overflow: auto;
+  overflow-y: auto;
 }
 
 .close-error-btn {
@@ -222,7 +231,6 @@ input[type="file"], select {
 
   width: 20px;
   height: 20px;
-  aspect-ratio: 1;
   border: none;
   background-color: transparent;
   font-size: 22px;
@@ -233,15 +241,3 @@ input[type="file"], select {
   opacity: 0.7;
   cursor: pointer;
 }
-
-.error-container {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-
-  z-index: 2;
-  position: fixed;
-  top: 10px;
-  right: 10px;
-}
-

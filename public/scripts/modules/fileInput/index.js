@@ -7,8 +7,12 @@ function setFileNameInLabel() {
   const { files } = this;
   const fileExist = !!(files && files.length > 0);
   const filesNames = [...files].map(({ name }) => name).join(', \n');
-  const filesText = fileExist ? files[0].name : 'or drag it here.';
-  
+  const maxWidth = fileLabel.offsetWidth;
+  const maxLetter = Math.floor(maxWidth / 12);
+  const filesText = fileExist
+    ? files[0].name.slice(0, maxLetter) + '...'
+    : 'or drag it here.';
+
   fileLabel.title = filesNames;
   fileLabel.textContent = filesText;
 }
