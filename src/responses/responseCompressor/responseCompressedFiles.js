@@ -9,6 +9,9 @@ const { setContentAttachment } = require('../../helpers/setContentAttachment');
 function responseCompressedFiles(response, files, compressFormat) {
   const archive = archiver('zip');
 
+  response.on('close', () => archive.destroy());
+  setContentAttachment(response, `${files.length}-files.zip`);
+
   files.forEach(file => {
     const newExt = getExt(compressFormat);
     const fileStream = fs.createReadStream(file.filepath);
@@ -17,11 +20,9 @@ function responseCompressedFiles(response, files, compressFormat) {
     fileStream.pipe(compressStream);
 
     archive.append(compressStream, {
-      name: `${file.originalName}.${newExt}`,
+      name: `${file.originalFilename}.${newExt}`,
     });
   });
-
-  setContentAttachment(response, `${files.length}-files.zip`);
 
   archive.pipe(response);
   archive.finalize();

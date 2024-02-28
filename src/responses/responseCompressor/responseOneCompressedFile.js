@@ -11,6 +11,7 @@ function responseOneCompressedFile(response, files, compressFormat) {
   const fileName = files[0].originalFilename;
 
   setContentAttachment(response, `${fileName}.${getExt(compressFormat)}`);
+  response.on('close', () => compressedFile.destroy());
 
   file.pipe(compressedFile).pipe(response);
 }

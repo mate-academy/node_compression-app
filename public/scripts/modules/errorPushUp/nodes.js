@@ -1,0 +1,1 @@
+export const errorContainer = document.querySelector('.error-container');

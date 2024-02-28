@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>File Archiving Service</title>
+  <title>File Compressing  Service</title>
   <link rel="shortcut icon" href="favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,16 +18,7 @@
     <div class="progress-bar"></div>
   </div>
 
-  <div class="error-wrapper">
-    <div id="errorPopup" class="error-popup">
-      <button id="closeErrorPopup" class="close-error-btn">
-        ×
-      </button>
-      Помилка! Щось пішло не так
-    </div>
-  </div>
-
-
+  <div class="error-container"></div>
   <h1 class="header">File Compressing Service</h1>
 
   <p class="description">
@@ -36,10 +27,10 @@
   </p>
 
   <div class="form-container">
-    <form method="post" id="form" enctype="multipart/form-data" target="_blank" action="/compress">
+    <form method="post" id="form" enctype="multipart/form-data">
       <fieldset class="form-group">
         <label for="file-upload">Choose your file:</label>
-        <input type="file" id="file-upload" name="file" hidden required multiple>
+        <input type="file" id="file-upload" name="file" multiple>
         <label for="file-upload" id="file-label">or drag it here</label>
       </fieldset>
 

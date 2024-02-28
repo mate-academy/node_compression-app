@@ -1,10 +1,14 @@
 import { requestWithProgress } from "./requestWithProgress.js";
 import { formElement } from './nodes.js';
 import { createEnableHandler } from '../../helpers/enableHandler.js';
+import { checkIfFileProvided } from "../fileInput/index.js";
 
-const handler = (event) => {
+const submitHandler = (event) => {
   event.preventDefault();
-  requestWithProgress(formElement);
+
+  if (checkIfFileProvided()) {
+    requestWithProgress(formElement);
+  }
 };
 
-export const enableCustomForm = createEnableHandler(formElement, 'submit', handler);
+export const enableCustomForm = createEnableHandler(formElement, 'submit', submitHandler);
