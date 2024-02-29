@@ -16,15 +16,14 @@ const createServer = () => {
     const requestMethod = req.method.toLowerCase();
 
     if (req.url === '/' && requestMethod === 'get') {
-      fs.readFile(`./public/${fileName}`, (err, data) => {
-        if (!err) {
-          res.setHeader('Content-type', 'text/html');
-          res.statusCode = 200;
-          res.end(data);
-        }
+      const fileStream = fs.createReadStream(`./public/${fileName}`);
 
-        res.statusCode = 400;
-        res.end();
+      res.statusCode = 200;
+      fileStream.pipe(res);
+
+      fileStream.on('error', () => {
+        res.statusCode = 500;
+        res.end('Server error');
       });
     } else if (req.url === '/compress' && requestMethod === 'post') {
       const form = new formidable.IncomingForm();
