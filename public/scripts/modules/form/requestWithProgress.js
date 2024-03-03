@@ -9,7 +9,7 @@ export function requestWithProgress(form) {
 
   xhr.open('POST', '/compress');
   xhr.responseType = 'blob';
-  
+
   xhr.onloadstart = () => {
     setProgressVisibility(true);
     setProgress(0);
@@ -34,7 +34,8 @@ export function requestWithProgress(form) {
   xhr.onload = () => {
     if (xhr.status < 400) {
       const contentType = xhr.getResponseHeader('Content-Type');
-      const fileName = xhr.getResponseHeader('Content-Disposition').split('filename=')[1];
+      const contentDisposition = xhr.getResponseHeader('Content-Disposition');
+      const fileName = decodeURIComponent(contentDisposition.split(`filename*=UTF-8''`)[1])
 
       downloadFile(xhr.response, contentType, fileName);
       setProgress(100);
