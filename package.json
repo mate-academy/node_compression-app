@@ -3,9 +3,6 @@
   "version": "1.0.0",
   "description": "Node.js compression app",
   "main": "src/index.js",
-  "engines": {
-    "node": "14"
-  },
   "scripts": {
     "init": "mate-scripts init",
     "start": "node src/index.js",
@@ -37,7 +34,6 @@
   "dependencies": {
     "archiver": "^6.0.1",
     "filesize": "^10.1.0",
-    "formidable": "^3.5.1",
-    "mate-scripts": "0.0.1"
+    "formidable": "^3.5.1"
   }
 }
