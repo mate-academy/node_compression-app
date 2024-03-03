@@ -9,6 +9,7 @@ const { faker } = require('@faker-js/faker');
 const zlib = require('zlib');
 const util = require('util');
 const { createServer } = require('../src/createServer');
+const { getExt } = require('../src/modules/compression/getExt');
 
 const PORT = 5701;
 const HOST = `http://localhost:${PORT}`;
@@ -29,7 +30,7 @@ const compressionTypes = {
   deflate: {
     decompress: util.promisify(zlib.inflate),
   },
-  br: {
+  brotli: {
     decompress: util.promisify(zlib.brotliDecompress),
   },
 };
@@ -135,7 +136,8 @@ describe('createServer', () => {
             })
               .then(
                 (res) => {
-                  const expectedHeader = `attachment; filename=${filename}.${compressionType}`;
+                  const ext = getExt(compressionType);
+                  const expectedHeader = `attachment; filename=${filename}.${ext}`;
 
                   expect(res.headers['content-disposition'])
                     .toBe(expectedHeader);

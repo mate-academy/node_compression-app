@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>File Compressing Service</title>
+  <link rel="shortcut icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100..900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="main.css">
+  <script src="main.js" type="module"></script>
+</head>
+
+<body>
+  <div class="progress-bar-container">
+    <div class="progress-bar"></div>
+  </div>
+
+  <div class="error-container"></div>
+
+  <h1 class="header">File Compressing Service</h1>
+
+  <p class="description">
+    Welcome to our file compression service! Select the file you wish to compress and choose your preferred compression level. Our intuitive interface ensures a swift, effortless, and secure compression process for your files.
+  </p>
+
+  <form method="post" id="form" enctype="multipart/form-data" class="form">
+    <fieldset class="form-group">
+      <label for="file-upload">Choose your file:</label>
+      <input type="file" id="file-upload" name="file" multiple>
+      <label for="file-upload" id="file-label" class="file-label">or drag it here</label>
+    </fieldset>
+
+    <fieldset class="form-group">
+      <label for="compressionType">Select your compression format:</label>
+      <select id="compressionType" name="compressionType">
+        <option value="gzip">Gzip</option>
+        <option value="deflate">Deflate</option>
+        <option value="brotli">Brotli</option>
+      </select>
+    </fieldset>
+    <button type="submit" class="submit-btn">Compress</button>
+  </form>
+</body>
+
+</html>
