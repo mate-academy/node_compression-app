@@ -6,13 +6,36 @@
     <link rel="shortcut icon" href="favicon.png" type="image/x-icon" />
     <title>Document</title>
   </head>
+
   <body>
-    <form method="post" action="http://localhost:5700/compress">
-      <input type="file" />
-      <button type="submit">Send file</button>
+    <form id="form" enctype="multipart/form-data" method="post">
+      <div>
+        File:
+        <input type="file" name="multipleFiles" id="inputFile" />
+        <input type="text" name="test" />
+      </div>
+      <input type="submit" value="Upload" />
     </form>
 
-    <script></script>
+    <script>
+      function submitForm(event) {
+        con;
+      }
+      document
+        .getElementById('form')
+        .addEventListener('submit', function (event) {
+          event.preventDefault();
+
+          const formData = new FormData(this);
+
+          fetch('http://localhost:5700/compress', {
+            method: 'POST',
+            body: formData,
+          })
+            .then(() => this.reset())
+            .catch((err) => console.log(err));
+        });
+    </script>
 
     <style>
       form {
