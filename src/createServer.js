@@ -65,6 +65,7 @@ function createServer() {
     const filename = getFilename(file.originalFilename, fields);
     const compressionType = getCompressionType(fields);
 
+    res.statusCode = 200;
     res.setHeader('Content-Type', contentType);
     res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
     res.setHeader('Content-Encoding', compressionType);
