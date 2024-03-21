@@ -32,6 +32,4 @@ function getContentType(file) {
   }
 }
 
-module.exports = {
-  getContentType,
-};
+module.exports = getContentType;

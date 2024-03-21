@@ -8,34 +8,43 @@
   </head>
 
   <body>
-    <form id="form" enctype="multipart/form-data" method="post">
+    <!-- <form id="form" method="post" onsubmit="handleSubmit(event)"> -->
+    <form
+      id="form"
+      method="post"
+      enctype="multipart/form-data"
+      action="/compress"
+    >
       <div>
         File:
         <input type="file" name="multipleFiles" id="inputFile" />
-        <input type="text" name="test" />
       </div>
+
+      <select name="compressionType" id="">
+        Compretion type
+        <option disabled selected value="false">Select type</option>
+        <option value="gzip">Gzip</option>
+        <option value="deflate">Deflate</option>
+        <option value="br">Br</option>
+      </select>
       <input type="submit" value="Upload" />
     </form>
 
-    <script>
-      function submitForm(event) {
-        con;
+    <!-- <script>
+      function handleSubmit(event) {
+        event.preventDefault();
+        const form = document.getElementById('form');
+
+        const formData = new FormData(form);
+
+        fetch('http://localhost:5700/compress', {
+          method: 'POST',
+          body: formData,
+        })
+          .then(() => form.reset())
+          .catch((err) => console.log(err));
       }
-      document
-        .getElementById('form')
-        .addEventListener('submit', function (event) {
-          event.preventDefault();
-
-          const formData = new FormData(this);
-
-          fetch('http://localhost:5700/compress', {
-            method: 'POST',
-            body: formData,
-          })
-            .then(() => this.reset())
-            .catch((err) => console.log(err));
-        });
-    </script>
+    </script> -->
 
     <style>
       form {
