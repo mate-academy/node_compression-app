@@ -8,13 +8,18 @@
   </head>
 
   <body>
-    <!-- <form id="form" method="post" onsubmit="handleSubmit(event)"> -->
-    <form
-      id="form"
-      method="post"
-      enctype="multipart/form-data"
-      action="/compress"
-    >
+    <!-- <form action="/compress" method="post">
+      <input type="file" name="file" />
+
+      <select name="compressionType" id="">
+        <option value="gz">gzip</option>
+        <option value="dfl">deflate</option>
+        <option value="br">br</option>
+      </select>
+
+      <button type="submit">Submit</button>
+    </form> -->
+    <form id="form" method="post" onsubmit="handleSubmit(event)">
       <div>
         File:
         <input type="file" name="multipleFiles" id="inputFile" />
@@ -30,9 +35,10 @@
       <input type="submit" value="Upload" />
     </form>
 
-    <!-- <script>
+    <script>
       function handleSubmit(event) {
         event.preventDefault();
+        console.log('dfsd');
         const form = document.getElementById('form');
 
         const formData = new FormData(form);
@@ -41,10 +47,13 @@
           method: 'POST',
           body: formData,
         })
-          .then(() => form.reset())
+          .then((res) => {
+            form.reset();
+            console.log(res.status);
+          })
           .catch((err) => console.log(err));
       }
-    </script> -->
+    </script>
 
     <style>
       form {

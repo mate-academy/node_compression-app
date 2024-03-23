@@ -38,7 +38,7 @@ const compressionTypes = {
   },
 };
 
-describe.skip('createServer', () => {
+describe('createServer', () => {
   describe('basic scenarios', () => {
     it('should create a server', () => {
       expect(createServer).toBeInstanceOf(Function);
