@@ -56,17 +56,14 @@ function createServer() {
     const form = new formidable.IncomingForm();
 
     form.parse(req, (err, fields, files) => {
-      if (err) {
-        console.error(err);
-        res.writeHead(400, { 'Content-Type': 'text/plain' });
-        res.end(String(err));
-
-        return;
-      }
-
       const compressionType = fields.compressionType;
 
-      if (!files.file) {
+      if (
+        err ||
+        !files.file ||
+        !compressionType ||
+        !compressionTypes.includes(compressionType[0])
+      ) {
         console.error(err);
         res.writeHead(400, { 'Content-Type': 'text/plain' });
         res.end(String(err));
@@ -75,23 +72,6 @@ function createServer() {
       }
 
       const file = files.file[0];
-
-      if (!compressionType) {
-        console.error(err);
-        res.writeHead(400, { 'Content-Type': 'text/plain' });
-        res.end(String(err));
-
-        return;
-      }
-
-      if (!compressionTypes.includes(compressionType[0])) {
-        console.error(err);
-        res.writeHead(400, { 'Content-Type': 'text/plain' });
-        res.end(String(err));
-
-        return;
-      }
-
       const compressed = getCompressedFile(compressionType[0]);
 
       res.writeHead(200, {
