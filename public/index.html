@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="shortcut icon" href="favicon.png" type="image/x-icon" />
+    <title>Document</title>
+  </head>
+
+  <body>
+    <!-- <form action="/compress" method="post">
+      <input type="file" name="file" />
+
+      <select name="compressionType" id="">
+        <option value="gz">gzip</option>
+        <option value="dfl">deflate</option>
+        <option value="br">br</option>
+      </select>
+
+      <button type="submit">Submit</button>
+    </form> -->
+    <form id="form" method="post" onsubmit="handleSubmit(event)">
+      <div>
+        File:
+        <input type="file" name="file" id="inputFile" />
+      </div>
+
+      <select name="compressionType" id="">
+        Compretion type
+        <option disabled selected value="false">Select type</option>
+        <option value="gzip">Gzip</option>
+        <option value="deflate">Deflate</option>
+        <option value="br">Br</option>
+      </select>
+      <input type="submit" value="Upload" />
+    </form>
+
+    <script>
+      function handleSubmit(event) {
+        event.preventDefault();
+
+        const form = document.getElementById('form');
+        const formData = new FormData(form);
+
+        fetch('http://localhost:5700/compress', {
+          method: 'POST',
+          body: formData,
+        })
+          .then((res) => {
+            form.reset();
+            console.log(res.status);
+          })
+          .catch((err) => console.log(err));
+      }
+    </script>
+
+    <style>
+      form {
+        border: 1px solid black;
+        margin-top: 40px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        padding: 10px;
+        background-color: cadetblue;
+      }
+
+      button {
+        width: 160px;
+      }
+    </style>
+  </body>
+</html>
