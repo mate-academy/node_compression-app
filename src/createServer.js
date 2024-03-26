@@ -2,7 +2,7 @@
 'use strict';
 
 const http = require('http');
-const { formidable } = require('formidable');
+const formidable = require('formidable');
 const fs = require('fs');
 const zlib = require('zlib');
 const path = require('path');
@@ -53,29 +53,50 @@ function createServer() {
       return;
     }
 
-    const form = formidable({});
-    let fields;
-    let files;
+    const form = new formidable.IncomingForm();
 
-    try {
-      [fields, files] = await form.parse(req);
+    form.parse(req, (err, fields, files) => {
+      if (err) {
+        console.error(err);
+        res.writeHead(400, { 'Content-Type': 'text/plain' });
+        res.end(String(err));
 
-      const compressionType = fields.compressionType[0];
-      const file = files.multipleFiles[0];
-
-      if (!compressionType || !file) {
-        throw new Error('Both file and compression type are required');
+        return;
       }
 
-      if (!compressionTypes.includes(compressionType)) {
-        throw new Error('Unsupported compression type');
+      const compressionType = fields.compressionType;
+
+      if (!files.file) {
+        console.error(err);
+        res.writeHead(400, { 'Content-Type': 'text/plain' });
+        res.end(String(err));
+
+        return;
       }
 
-      const compressed = getCompressedFile(compressionType);
+      const file = files.file[0];
+
+      if (!compressionType) {
+        console.error(err);
+        res.writeHead(400, { 'Content-Type': 'text/plain' });
+        res.end(String(err));
+
+        return;
+      }
+
+      if (!compressionTypes.includes(compressionType[0])) {
+        console.error(err);
+        res.writeHead(400, { 'Content-Type': 'text/plain' });
+        res.end(String(err));
+
+        return;
+      }
+
+      const compressed = getCompressedFile(compressionType[0]);
 
       res.writeHead(200, {
         'Content-Type': 'application/json',
-        'Content-Disposition': `attachment; filename=${file.originalFilename}.${compressionType}`,
+        'Content-Disposition': `attachment; filename=${file.originalFilename}.${compressionType[0]}`,
       });
 
       const fileStream = fs.createReadStream(file.filepath);
@@ -88,11 +109,7 @@ function createServer() {
         .on('error', (error) => console.log(error));
 
       res.on('close', () => fileStream.destroy());
-    } catch (err) {
-      console.error(err);
-      res.writeHead(err.httpCode || 400, { 'Content-Type': 'text/plain' });
-      res.end(String(err));
-    }
+    });
   });
 
   return server;
