@@ -30,7 +30,7 @@ const htmlForm = `
 </html>
 `;
 
-function bufferSplit(buffer, separator) {
+function splitBuffer(buffer, separator) {
   const parts = [];
   let start = 0;
   let index;
@@ -44,19 +44,108 @@ function bufferSplit(buffer, separator) {
   return parts;
 }
 
+function parseMultipartPart(partBuffer) {
+  const headerDelimiter = '\r\n\r\n';
+  const headerEndIndex = partBuffer.indexOf(headerDelimiter);
+
+  if (headerEndIndex === -1) {
+    return null;
+  }
+
+  const headersText = partBuffer.slice(0, headerEndIndex).toString('utf8');
+  let content = partBuffer.slice(headerEndIndex + headerDelimiter.length);
+
+  if (content.slice(-2).toString() === '\r\n') {
+    content = content.slice(0, content.length - 2);
+  }
+
+  const headers = {};
+
+  headersText.split('\r\n').forEach((line) => {
+    const [key, value] = line.split(': ');
+
+    if (key && value) {
+      headers[key.toLowerCase()] = value;
+    }
+  });
+
+  const disposition = headers['content-disposition'];
+
+  if (!disposition) {
+    return null;
+  }
+
+  const nameMatch = disposition.match(/name="([^"]+)"/);
+
+  if (!nameMatch) {
+    return null;
+  }
+
+  const fieldName = nameMatch[1];
+
+  const filenameMatch = disposition.match(/filename="([^"]+)"/);
+  const filename = filenameMatch ? filenameMatch[1] : undefined;
+
+  return { fieldName, filename, content };
+}
+
+function parseMultipartData(bodyBuffer, boundary) {
+  const parts = splitBuffer(bodyBuffer, Buffer.from(boundary));
+  const formData = {};
+
+  for (const part of parts) {
+    if (part.length < 10) {
+      continue;
+    }
+
+    const parsedPart = parseMultipartPart(part);
+
+    if (!parsedPart) {
+      continue;
+    }
+
+    if (parsedPart.fieldName === 'file') {
+      formData.file = {
+        filename: parsedPart.filename,
+        content: parsedPart.content,
+      };
+    } else if (parsedPart.fieldName === 'compressionType') {
+      formData.compressionType = parsedPart.content.toString().trim();
+    }
+  }
+
+  return formData;
+}
+
+function getCompressionStream(type) {
+  switch (type) {
+    case 'gzip':
+      return { stream: zlib.createGzip(), extension: '.gzip' };
+    case 'deflate':
+      return { stream: zlib.createDeflate(), extension: '.deflate' };
+    case 'br':
+      if (typeof zlib.createBrotliCompress === 'function') {
+        return { stream: zlib.createBrotliCompress(), extension: '.br' };
+      }
+      throw new Error('Brotli compression not supported');
+    default:
+      throw new Error('Unsupported compression type');
+  }
+}
+
 function createServer() {
   return http.createServer((req, res) => {
-    const { method, url: reqUrl } = req;
+    const { method, url } = req;
 
-    if (reqUrl === '/' && method === 'GET') {
+    if (url === '/' && method === 'GET') {
       res.writeHead(200, { 'Content-Type': 'text/html' });
       res.end(htmlForm);
 
       return;
     }
 
-    if (reqUrl === '/compress') {
-      if (method === 'GET') {
+    if (url === '/compress') {
+      if (method !== 'POST') {
         res.writeHead(400);
         res.end('GET method not allowed on /compress');
 
@@ -87,115 +176,40 @@ function createServer() {
 
       const chunks = [];
 
-      req.on('data', (chunk) => {
-        chunks.push(chunk);
-      });
+      req.on('data', (chunk) => chunks.push(chunk));
 
       req.on('end', () => {
         const bodyBuffer = Buffer.concat(chunks);
-        const parts = bufferSplit(bodyBuffer, Buffer.from(boundary));
+        const { file, compressionType } = parseMultipartData(
+          bodyBuffer,
+          boundary,
+        );
 
-        let fileField = null;
-        let compTypeField = null;
-
-        for (const part of parts) {
-          if (part.length < 10) {
-            continue;
-          }
-
-          const headerEnd = part.indexOf('\r\n\r\n');
-
-          if (headerEnd === -1) {
-            continue;
-          }
-
-          const headerPart = part.slice(0, headerEnd).toString('utf8');
-          let content = part.slice(headerEnd + 4);
-
-          if (content.slice(-2).toString() === '\r\n') {
-            content = content.slice(0, content.length - 2);
-          }
-
-          const headers = {};
-
-          headerPart.split('\r\n').forEach((line) => {
-            const [key, value] = line.split(': ');
-
-            if (key && value) {
-              headers[key.toLowerCase()] = value;
-            }
-          });
-
-          if (!headers['content-disposition']) {
-            continue;
-          }
-
-          const disposition = headers['content-disposition'];
-
-          const nameMatch = disposition.match(/name="([^"]+)"/);
-
-          if (!nameMatch) {
-            continue;
-          }
-
-          const fieldName = nameMatch[1];
-
-          if (fieldName === 'file') {
-            const filenameMatch = disposition.match(/filename="([^"]+)"/);
-
-            if (!filenameMatch) {
-              continue;
-            }
-
-            const filename = filenameMatch[1];
-
-            fileField = { filename, content };
-          } else if (fieldName === 'compressionType') {
-            compTypeField = content.toString().trim();
-          }
-        }
-
-        if (!fileField || !compTypeField) {
+        if (!file || !compressionType) {
           res.writeHead(400);
           res.end('Missing file or compressionType field');
 
           return;
         }
 
-        let compressor;
-        let ext;
+        let compression;
 
-        if (compTypeField === 'gzip') {
-          compressor = zlib.createGzip();
-          ext = '.gzip';
-        } else if (compTypeField === 'deflate') {
-          compressor = zlib.createDeflate();
-          ext = '.deflate';
-        } else if (compTypeField === 'br') {
-          if (typeof zlib.createBrotliCompress === 'function') {
-            compressor = zlib.createBrotliCompress();
-          } else {
-            res.writeHead(400);
-            res.end('Brotli compression not supported');
-
-            return;
-          }
-          ext = '.br';
-        } else {
+        try {
+          compression = getCompressionStream(compressionType);
+        } catch (error) {
           res.writeHead(400);
-          res.end('Unsupported compression type');
+          res.end(error.message);
 
           return;
         }
 
-        const fileStream = Readable.from(fileField.content);
+        const fileStream = Readable.from(file.content);
 
         res.writeHead(200, {
           'Content-Type': 'application/octet-stream',
-          'Content-Disposition': `attachment; filename=${fileField.filename + ext}`,
+          'Content-Disposition': `attachment; filename=${file.filename + compression.extension}`,
         });
-
-        fileStream.pipe(compressor).pipe(res);
+        fileStream.pipe(compression.stream).pipe(res);
       });
 
       req.on('error', () => {
@@ -211,6 +225,4 @@ function createServer() {
   });
 }
 
-module.exports = {
-  createServer,
-};
+module.exports = { createServer };
