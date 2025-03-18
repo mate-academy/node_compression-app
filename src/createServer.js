@@ -73,17 +73,6 @@ function createServer() {
             `Successful compressing file: ${originalFileName} using compression type: ${compressionType}`,
           );
           res.end();
-
-          const destinationPath = path.join(
-            __dirname,
-            '../' + originalFileName,
-          );
-
-          const destinationStream = fs.createReadStream(
-            `${destinationPath}.${compressionFileExtension}`,
-          );
-
-          return destinationStream;
         });
       });
 
