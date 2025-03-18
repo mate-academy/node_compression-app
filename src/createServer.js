@@ -58,21 +58,24 @@ function createServer() {
           compressionFileExtension = 'br';
         }
 
-        const destination = fs.createWriteStream(
-          `${files.file[0].originalFilename}.${compressionFileExtension}`,
-        );
+        // const destination = fs.createWriteStream(
+        //   `${files.file[0].originalFilename}.${compressionFileExtension}`,
+        // );
 
-        const stream = source.pipe(zlibCompression).pipe(destination);
+        res.writeHead(200, {
+          'content-disposition': `attachment; filename=${originalFileName}.${compressionFileExtension}`,
+        });
+
+        const stream = source.pipe(zlibCompression).pipe(res);
 
         stream.on('finish', () => {
-          res.writeHead(200, {
-            'content-disposition': `attachment; filename=${originalFileName}.${compressionFileExtension}`,
-          });
-
-          res.write(
-            `Successful compressing file: ${originalFileName} using compression type: ${compressionType}`,
-          );
+          // res.write(
+          // eslint-disable-next-line max-len
+          //  `Successful compressing file: ${originalFileName} using compression type: ${compressionType}`,
+          // );
           res.end();
+
+          fs.unlinkSync(newPath);
         });
       });
 
