@@ -51,19 +51,26 @@ function createServer() {
           return;
         }
 
-        const file = files.file[0];
-        const compressionType = fields.compressionType[0];
+        const file = files.file?.[0];
+        const compressionType = fields.compressionType?.[0];
 
-        if (!['gzip', 'deflate', 'br'].includes(compressionType)) {
+        if (!file) {
           res.writeHead(400, { 'Content-Type': 'text/plain' });
-          res.end('Unsupported compression type.');
+          res.end('No file uploaded.');
 
           return;
         }
 
-        if (!file || file.length === 0) {
+        if (!compressionType) {
           res.writeHead(400, { 'Content-Type': 'text/plain' });
-          res.end('No file uploaded.');
+          res.end('No compression type provided.');
+
+          return;
+        }
+
+        if (!['gzip', 'deflate', 'br'].includes(compressionType)) {
+          res.writeHead(400, { 'Content-Type': 'text/plain' });
+          res.end('Unsupported compression type.');
 
           return;
         }
@@ -77,32 +84,30 @@ function createServer() {
           }
 
           let compressedData;
-          const fileName = path.basename(
-            file.originalFilename,
-            path.extname(file.originalFilename),
-          );
-          const fileExtension =
-            compressionType === 'gzip'
-              ? '.gz'
-              : compressionType === 'deflate'
-                ? '.dfl'
-                : '.br';
-          const outputFileName = `${fileName}${fileExtension}`;
 
-          if (compressionType === 'gzip') {
-            compressedData = zlib.gzipSync(data);
-          } else if (compressionType === 'deflate') {
-            compressedData = zlib.deflateSync(data);
-          } else if (compressionType === 'br') {
-            compressedData = zlib.brotliCompressSync(data);
+          try {
+            if (compressionType === 'gzip') {
+              compressedData = zlib.gzipSync(data);
+            } else if (compressionType === 'deflate') {
+              compressedData = zlib.deflateSync(data);
+            } else if (compressionType === 'br') {
+              compressedData = zlib.brotliCompressSync(data);
+            }
+
+            const fileExt = path.extname(file.originalFilename);
+            const fileName = path.basename(file.originalFilename, fileExt);
+            const outputFileName = `${fileName}${fileExt}.${compressionType}`;
+
+            res.writeHead(200, {
+              'Content-Type': 'application/octet-stream',
+              'Content-Disposition': `attachment; filename=${outputFileName}`,
+            });
+
+            res.end(compressedData);
+          } catch (compressionError) {
+            res.writeHead(500, { 'Content-Type': 'text/plain' });
+            res.end('Compression error.');
           }
-
-          res.writeHead(200, {
-            'Content-Type': 'application/octet-stream',
-            'Content-Disposition': `attachment; filename='${outputFileName}'`,
-          });
-
-          res.end(compressedData);
         });
       });
     } else if (req.url === '/compress' && req.method === 'GET') {
