@@ -75,40 +75,41 @@ function createServer() {
           return;
         }
 
-        fs.readFile(file.path, (err, data) => {
-          if (err) {
-            res.writeHead(500, { 'Content-Type': 'text/plain' });
-            res.end('File reading error.');
+        const fileExt = path.extname(file.originalFilename);
+        const fileName = path.basename(file.originalFilename, fileExt);
+        const outputFileName = `${fileName}${fileExt}.${compressionType}`;
 
-            return;
-          }
-
-          let compressedData;
-
-          try {
-            if (compressionType === 'gzip') {
-              compressedData = zlib.gzipSync(data);
-            } else if (compressionType === 'deflate') {
-              compressedData = zlib.deflateSync(data);
-            } else if (compressionType === 'br') {
-              compressedData = zlib.brotliCompressSync(data);
-            }
-
-            const fileExt = path.extname(file.originalFilename);
-            const fileName = path.basename(file.originalFilename, fileExt);
-            const outputFileName = `${fileName}${fileExt}.${compressionType}`;
-
-            res.writeHead(200, {
-              'Content-Type': 'application/octet-stream',
-              'Content-Disposition': `attachment; filename=${outputFileName}`,
-            });
-
-            res.end(compressedData);
-          } catch (compressionError) {
-            res.writeHead(500, { 'Content-Type': 'text/plain' });
-            res.end('Compression error.');
-          }
+        res.writeHead(200, {
+          'Content-Type': 'application/octet-stream',
+          'Content-Disposition': `attachment; filename=${outputFileName}`,
         });
+
+        const readStream = fs.createReadStream(file.path);
+        let compressStream;
+
+        if (compressionType === 'gzip') {
+          compressStream = zlib.createGzip();
+        } else if (compressionType === 'deflate') {
+          compressStream = zlib.createDeflate();
+        } else if (compressionType === 'br') {
+          compressStream = zlib.createBrotliCompress();
+        }
+
+        readStream.on('error', (err) => {
+          /* eslint-disable-next-line no-console */
+          console.error('File reading error:', err);
+          res.writeHead(500, { 'Content-Type': 'text/plain' });
+          res.end('File reading error.');
+        });
+
+        compressStream.on('error', (err) => {
+          /* eslint-disable-next-line no-console */
+          console.error('Compression error:', err);
+          res.writeHead(500, { 'Content-Type': 'text/plain' });
+          res.end('Compression error.');
+        });
+
+        readStream.pipe(compressStream).pipe(res);
       });
     } else if (req.url === '/compress' && req.method === 'GET') {
       res.writeHead(400, { 'Content-Type': 'text/plain' });
