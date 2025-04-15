@@ -2,8 +2,9 @@
 
 const http = require('http');
 const fs = require('fs');
-const querystring = require('querystring');
+const path = require('path');
 const zlib = require('zlib');
+const formidable = require('formidable');
 
 function createServer() {
   /* Write your code here */
@@ -12,27 +13,33 @@ function createServer() {
 
   server.on('request', (req, res) => {
     if (req.method === 'POST' && req.url === '/compress') {
-      let body = '';
+      const form = new formidable.IncomingForm({ multiples: false });
 
-      req.on('data', (chunk) => {
-        body += chunk.toString();
-      });
+      form.parse(req, (err, fields, files) => {
+        if (err) {
+          res.statusCode = 400;
 
-      req.on('end', () => {
-        const parsed = querystring.parse(body);
-        const file = parsed.file;
-        const compressionType = parsed.compressionType;
+          return res.end('Invalid form data');
+        }
 
-        if (!file) {
+        const compressionType = Array.isArray(fields.compressionType)
+          ? fields.compressionType[0]
+          : fields.compressionType;
+
+        const uploadedFile = Array.isArray(files.file)
+          ? files.file[0]
+          : files.file;
+
+        if (!uploadedFile || !uploadedFile.filepath) {
           res.statusCode = 400;
 
           return res.end('File is required');
         }
 
-        if (!fs.existsSync(file)) {
-          res.statusCode = 404;
+        if (!compressionType) {
+          res.statusCode = 400;
 
-          return res.end('File not found');
+          return res.end('Compression type is required');
         }
 
         let compressor;
@@ -53,18 +60,19 @@ function createServer() {
             return res.end('Unsupported compression type');
         }
 
-        const fileStream = fs.createReadStream(file);
+        const fileStream = fs.createReadStream(uploadedFile.filepath);
+        const originalFileName = path.basename(
+          uploadedFile.originalFilename || 'file',
+        );
 
         res.statusCode = 200;
-        res.setHeader('Content-Encoding', compressionType);
         res.setHeader('Content-Type', 'application/octet-stream');
 
         res.setHeader(
           'Content-Disposition',
-          `attachment; filename="${file}.${compressionType}"`,
+          `attachment; filename=${originalFileName}.${compressionType}`,
         );
 
-        // Перед началом стриминга — устанавливаем заголовки
         fileStream.pipe(compressor).pipe(res);
 
         res.on('close', () => {
@@ -86,7 +94,7 @@ function createServer() {
       res.statusCode = 200;
       res.setHeader('Content-type', 'text/html');
 
-      res.end(`<form method="POST" action="/compress">
+      res.end(`<form method="POST" action="/compress" enctype="multipart/form-data">
         <input name="file" type="file">
         <select name="compressionType">
           <option value="gzip">gzip</option>
