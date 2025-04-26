@@ -1,6 +1,3 @@
-/* eslint-disable max-len */
-/* eslint-disable no-console */
-
 /* eslint-disable no-console */
 'use strict';
 
