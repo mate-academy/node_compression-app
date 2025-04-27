@@ -82,19 +82,31 @@ function createServer() {
         const file = Array.isArray(files.file) ? files.file[0] : files.file;
         const fileStream = fs.createReadStream(file.filepath);
         const compressor = COMPRESSION_TYPES[compressionType].compress();
-        const fileName = `${file.originalFilename}.${compressionType}`;
+
+        const compressedFileName = `${file.originalFilename}.${COMPRESSION_TYPES[compressionType].extension}`;
+        const headerFileName = `${file.originalFilename}.${compressionType}`;
 
         res.writeHead(200, {
-          'Content-Disposition': `attachment; filename=${fileName}`,
+          'Content-Disposition': `attachment; filename=${headerFileName}`,
           'Content-Type': 'application/octet-stream',
         });
 
+        const outputStream = fs.createWriteStream(compressedFileName);
+
         fileStream
           .pipe(compressor)
-          .pipe(res)
+          .pipe(outputStream)
+          .on('finish', () => {
+            fs.createReadStream(compressedFileName)
+              .pipe(res)
+              .on('error', () => {
+                res.writeHead(500);
+                res.end('Stream error');
+              });
+          })
           .on('error', () => {
             res.writeHead(500);
-            res.end('Stream error');
+            res.end('Compression error');
           });
       });
 
