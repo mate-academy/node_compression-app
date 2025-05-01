@@ -48,7 +48,7 @@ function createServer() {
         if (!file || !compressionType) {
           res.writeHead(400);
 
-          return res.end('Missing type or compression type');
+          return res.end('Missing file or compression type');
         }
 
         const inputStream = fs.createReadStream(file[0].filepath);
