@@ -9,7 +9,7 @@ const zlib = require('zlib');
 const { IncomingForm } = require('formidable');
 
 const compressionMap = {
-  gzip: { stream: zlib.createGzip, ext: '.gz' }, // <- Змініть це на '.gzip'
+  gzip: { stream: zlib.createGzip, ext: '.gz' },
   deflate: { stream: zlib.createDeflate, ext: '.deflate' },
   br: { stream: zlib.createBrotliCompress, ext: '.br' },
 };
