@@ -48,21 +48,32 @@ function createServer() {
 
         const file = files.file;
 
-        const compressionType = fields.compressionType;
+        const compressionType = Array.isArray(fields.compressionType)
+          ? fields.compressionType[0]
+          : fields.compressionType;
 
-        if (!file || !compressionType) {
+        const uploadFile = Array.isArray(file) ? file[0] : file;
+
+        if (!uploadFile || !uploadFile.filepath) {
           res.statusCode = 400;
           res.end('Missing file or compression type');
 
           return;
         }
 
-        const inputStream = fs.createReadStream(file[0].filepath);
+        if (!compressionType) {
+          res.statusCode = 400;
+          res.end('File is required');
+
+          return;
+        }
+
+        const inputStream = fs.createReadStream(uploadFile.filepath);
 
         let outputStream;
         let extensionChoice = '';
 
-        switch (compressionType[0]) {
+        switch (compressionType) {
           case 'gzip':
             outputStream = zlib.createGzip();
             extensionChoice = '.gzip';
@@ -82,13 +93,16 @@ function createServer() {
             return;
         }
 
-        const originalFileName = file[0].originalFilename;
+        const originalFileName = uploadFile.originalFilename;
         const outputFileName = originalFileName + extensionChoice;
 
-        res.writeHead(200, {
-          'Content-Type': 'application/octet-stream',
-          'Content-Disposition': `attachment; filename=${outputFileName}`,
-        });
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/octet-stream');
+
+        res.setHeader(
+          'Content-Disposition',
+          `attachment; filename=${outputFileName}`,
+        );
 
         inputStream.pipe(outputStream).pipe(res);
       });
