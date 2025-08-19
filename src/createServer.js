@@ -41,14 +41,14 @@ function createServer() {
         let ext;
 
         switch (compressionType) {
-          case 'gzip':
+          case 'gz':
             compressor = zlib.createGzip();
-            ext = '.gzip';
+            ext = '.gz';
             break;
 
-          case 'deflate':
+          case 'dfl':
             compressor = zlib.createDeflate();
-            ext = '.deflate';
+            ext = '.dfl';
             break;
 
           case 'br':
