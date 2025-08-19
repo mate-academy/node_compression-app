@@ -40,6 +40,7 @@ function createServer() {
       }
 
       const file = Array.isArray(files.file) ? files.file[0] : files.file;
+      const allowedTypes = ['gzip', 'deflate', 'br'];
       const compressionType = Array.isArray(fields.compressionType)
         ? fields.compressionType[0]
         : fields.compressionType;
@@ -51,21 +52,33 @@ function createServer() {
         return;
       }
 
+      if (!allowedTypes.includes(compressionType)) {
+        res.writeHead(400, { 'Content-Type': 'text/plain' });
+        res.end('Bad Request: Unsupported compression type');
+
+        return;
+      }
+
       let compressor;
       let extension;
+      let contentTypeName;
 
       switch (compressionType) {
         case 'gzip':
           compressor = zlib.createGzip();
-          extension = '.gzip';
+          extension = '.gz'; // коротке розширення
+          contentTypeName = 'gzip'; // для заголовка
           break;
         case 'deflate':
           compressor = zlib.createDeflate();
-          extension = '.deflate';
+          extension = '.dfl';
+          contentTypeName = 'deflate';
           break;
         case 'br':
           compressor = zlib.createBrotliCompress();
+          // eslint-disable-next-line no-unused-vars
           extension = '.br';
+          contentTypeName = 'br';
           break;
         default:
           res.writeHead(400, { 'Content-Type': 'text/plain' });
@@ -75,11 +88,12 @@ function createServer() {
       }
 
       const originalFileName = file.originalFilename || 'uploaded_file';
-      const compressedFileName = `${originalFileName}${extension}`;
+      // const compressedFileName = `${originalFileName}${extension}`;
 
+      // Передаємо у Content-Disposition повне ім’я алгоритму
       res.writeHead(200, {
-        'Content-Type': 'text/plain',
-        'Content-Disposition': `attachment; filename=${compressedFileName}`,
+        'Content-Type': 'application/octet-stream',
+        'Content-Disposition': `attachment; filename=${originalFileName}.${contentTypeName}`,
       });
 
       const inputStream = fs.createReadStream(file.filepath);
