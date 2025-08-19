@@ -56,11 +56,11 @@ function createServer() {
       switch (compressionType) {
         case 'gzip':
           compressor = zlib.createGzip();
-          extension = '.gz';
+          extension = '.gzip';
           break;
         case 'deflate':
           compressor = zlib.createDeflate();
-          extension = '.dfl';
+          extension = '.deflate';
           break;
         case 'br':
           compressor = zlib.createBrotliCompress();
