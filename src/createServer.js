@@ -12,7 +12,7 @@ function createServer() {
 
       form.parse(req, (err, fields, files) => {
         if (err) {
-          res.statusCode = 500;
+          res.statusCode = 400;
 
           return res.end('Parsing form error');
         }
@@ -65,22 +65,17 @@ function createServer() {
 
         const compressedFileName = originalFileName + ext;
 
-        if (file && compressor) {
-          res.statusCode = 200;
-          res.setHeader('Content-Type', 'application/octet-stream');
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/octet-stream');
 
-          res.setHeader(
-            'Content-Disposition',
-            `attachment; filename=${compressedFileName}`,
-          );
+        res.setHeader(
+          'Content-Disposition',
+          `attachment; filename=${compressedFileName}`,
+        );
 
-          const readStream = fs.createReadStream(filePath);
+        const readStream = fs.createReadStream(filePath);
 
-          readStream.pipe(compressor).pipe(res);
-        } else {
-          res.statusCode = 500;
-          res.end('Error processing file or compressor');
-        }
+        readStream.pipe(compressor).pipe(res);
       });
     } else if (req.method === 'GET' && req.url === '/') {
       res.statusCode = 200;
