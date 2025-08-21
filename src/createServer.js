@@ -71,7 +71,7 @@ function createServer() {
           fs.unlink(file.path, () => {});
 
           if (erro) {
-            res.writeHead(500);
+            res.writeHead(400);
             res.end('Compression error');
           }
         });
