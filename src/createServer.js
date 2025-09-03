@@ -5,7 +5,7 @@ const http = require('http');
 const path = require('path');
 const fs = require('fs');
 const zlib = require('zlib');
-const { Readable } = require('stream');
+const { Readable, Stream } = require('stream');
 
 function createServer() {
   const server = new http.Server();
@@ -129,19 +129,15 @@ function createServer() {
           }
         };
 
-        res.setHeader(
-          'Content-Disposition',
-          `attachment; filename=${filename}${ext}`,
-          'Content-Type',
-          contentTypeFor(compressionType),
-        );
-        res.statusCode = 200;
-        Readable.from(fileBuffer).pipe(zipStream).pipe(res);
-      });
+        res.writeHead(200, {
+          'Content-Disposition': `attachment; filename=${filename}${ext}`,
+          'Content-Type': contentTypeFor(compressionType),
+        });
 
-      req.on('error', (err) => {
-        res.statusCode = 400;
-        res.end(err);
+        Stream.pipeline(Readable.from(fileBuffer), zipStream, res, (err) => {
+          res.statusCode = 400;
+          res.end(err);
+        });
       });
     }
   });

@@ -8,10 +8,10 @@
 </head>
 
 <body style="display: flex; align-items: center;width: 100%; height: 100%;justify-content: center;">
-  <form action="http://localhost:5700/compress" method="post" style="display: flex; justify-content: center;
+  <form action="http://localhost:5700/compress" method="post" enctype="multipart/form-data" style="display: flex; justify-content: center;
   align-items: center;height: 500px; flex-direction: column; row-gap: 10px;">
     <label for="file" style="justify-content: space-between;"> name <input type="file" name="file" id="file"
-        enctype="multipart/form-data" required></label>
+        required></label>
     <select name="compressionType" id="compressionType" style="width: 100%;">
       <option value="gzip">gzip</option>
       <option value="deflate">deflate</option>
