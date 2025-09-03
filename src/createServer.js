@@ -108,10 +108,10 @@ function createServer() {
           ext = '.br';
         } else if (compressionType === 'deflate') {
           zipStream = zlib.createDeflate();
-          ext = '.deflate';
+          ext = '.dfl';
         } else if (compressionType === 'gzip') {
           zipStream = zlib.createGzip();
-          ext = '.gzip';
+          ext = '.gz';
         } else {
           res.statusCode = 400;
 
@@ -135,8 +135,9 @@ function createServer() {
         });
 
         Stream.pipeline(Readable.from(fileBuffer), zipStream, res, (err) => {
-          res.statusCode = 400;
-          res.end(err);
+          if (err) {
+            res.destroy(err);
+          }
         });
       });
     }
