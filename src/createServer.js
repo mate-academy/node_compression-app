@@ -89,7 +89,7 @@ function createServer() {
           }
         }
 
-        if (!filename || !fileBuffer) {
+        if (!filename || !fileBuffer || fileBuffer.length === 0) {
           res.statusCode = 400;
 
           return res.end('No file provided');
@@ -118,18 +118,35 @@ function createServer() {
           return res.end('Unknown compression type');
         }
 
+        const contentTypeFor = (contenttype) => {
+          switch (contenttype) {
+            case 'br':
+              return 'application/x-brotli';
+            case 'deflate':
+              return 'application/octet-stream';
+            default:
+              return 'application/gzip';
+          }
+        };
+
         res.setHeader(
           'Content-Disposition',
           `attachment; filename=${filename}${ext}`,
+          'Content-Type',
+          contentTypeFor(compressionType),
         );
         res.statusCode = 200;
-
         Readable.from(fileBuffer).pipe(zipStream).pipe(res);
+      });
+
+      req.on('error', (err) => {
+        res.statusCode = 400;
+        res.end(err);
       });
     }
   });
 
-  server.on('error', () => { });
+  server.on('error', () => {});
 
   return server;
 }
