@@ -1,4 +1,3 @@
-/* ================= Общие переменные ================= */
 :root {
   --primary-gradient: linear-gradient(135deg, #4facfe, #00f2fe);
   --primary-color: #4facfe;
@@ -10,7 +9,6 @@
   --font-family: "Segoe UI", Roboto, sans-serif;
 }
 
-/* ================= Общий стиль ================= */
 body {
   font-family: var(--font-family);
   background: linear-gradient(135deg, #4facfe, #00f2fe);
@@ -23,7 +21,6 @@ body {
   margin: 0;
 }
 
-/* ================= Заголовок ================= */
 h1 {
   font-size: 2.5rem;
   color: #fff;
@@ -31,7 +28,6 @@ h1 {
   text-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
 
-/* ================= Форма ================= */
 .form {
   background: #fff;
   padding: 30px 40px;
@@ -45,7 +41,6 @@ h1 {
   text-align: center;
 }
 
-/* ================= Лейблы ================= */
 .form__input-label {
   font-size: 1rem;
   font-weight: 500;
@@ -53,7 +48,6 @@ h1 {
   text-align: left;
 }
 
-/* ================= File Input ================= */
 .form__input {
   padding: 10px;
   border: 2px dashed var(--primary-color);
@@ -69,7 +63,6 @@ h1 {
   background: #f0faff;
 }
 
-/* ================= Кнопка ================= */
 .form__button {
   background: var(--primary-gradient);
   color: #fff;
@@ -91,10 +84,9 @@ h1 {
   transform: scale(0.98);
 }
 
-/* ================= Select ================= */
 .form__select {
   width: 100%;
-  padding: 10px 40px 10px 15px; /* место для стрелки */
+  padding: 10px 40px 10px 15px;
   font-size: 16px;
   border: 1px solid #ccc;
   border-radius: 8px;
@@ -121,7 +113,6 @@ h1 {
   box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
 }
 
-/* ================= Опции select ================= */
 .form__select option {
   padding: 10px;
   background-color: #fff;

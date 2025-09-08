@@ -19,33 +19,32 @@ function createServer() {
     response.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
 
     if (request.method === 'GET' && url.pathname === '/') {
-      response.statusCode = 200;
-      response.setHeader('Content-Type', 'text/plain');
-
-      return response.end('Server is running');
+      return prepareResponse(response, 200, 'text/plain', 'Server is running');
     }
 
     if (url.pathname !== '/compress') {
-      response.statusCode = 404;
-      response.setHeader('Content-Type', 'text/plain');
-
-      return response.end('Use /compress endpoint');
+      return prepareResponse(
+        response,
+        404,
+        'text/plain',
+        'Use /compress endpoint',
+      );
     }
 
     if (request.method !== 'POST') {
-      response.statusCode = 400;
-      response.setHeader('Content-Type', 'text/plain');
-
-      return response.end('Use POST method');
+      return prepareResponse(response, 400, 'text/plain', 'Use POST method');
     }
 
     const form = new IncomingForm({ multiples: false });
 
     form.parse(request, (err, fields, files) => {
       if (err || !files.file || !fields.compressionType) {
-        response.statusCode = 400;
-
-        return response.end('Invalid form data');
+        return prepareResponse(
+          response,
+          400,
+          'text/plain',
+          'Invalid form data',
+        );
       }
 
       const compressionType = (
@@ -59,16 +58,26 @@ function createServer() {
 
       let compressStream;
 
-      if (compressionType === 'gzip') {
-        compressStream = zlib.createGzip();
-      } else if (compressionType === 'deflate') {
-        compressStream = zlib.createDeflate();
-      } else if (compressionType === 'br') {
-        compressStream = zlib.createBrotliCompress();
-      } else {
-        response.statusCode = 400;
+      switch (compressionType) {
+        case 'gzip':
+          compressStream = zlib.createGzip();
+          break;
 
-        return response.end('Unsupported compression type');
+        case 'deflate':
+          compressStream = zlib.createDeflate();
+          break;
+
+        case 'br':
+          compressStream = zlib.createBrotliCompress();
+          break;
+
+        default:
+          return prepareResponse(
+            response,
+            400,
+            'text/plain',
+            'Unsupported compression type',
+          );
       }
 
       const fileNameCompressed = `${fileName}.${compressionType}`;
@@ -101,3 +110,11 @@ function createServer() {
 module.exports = {
   createServer,
 };
+
+function prepareResponse(response, statusCode, contentType, endResponse) {
+  response.statusCode = statusCode;
+  response.setHeader('Content-Type', contentType);
+  response.end(endResponse);
+
+  return response;
+}
