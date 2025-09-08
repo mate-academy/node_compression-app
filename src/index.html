@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CompressApp</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./request.js" defer></script>
+</head>
+<body>
+  <h1>CompressApp</h1>
+  <form class="form" id="compressForm">
+    <label class="form__input-label" for="file">Upload your file, you need to compress</label>
+    <input class="form__input" name="file" type="file" required />
+    <select class="form__select" name="compressionType">
+      <option value="gzip">gzip</option>
+      <option value="deflate">deflate</option>
+      <option value="br">br</option>
+    </select>
+    <input class="form__button" type="submit" value="Compress">
+  </form>
+</body>
+</html>

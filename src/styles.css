@@ -1,0 +1,120 @@
+:root {
+  --primary-gradient: linear-gradient(135deg, #4facfe, #00f2fe);
+  --primary-color: #4facfe;
+  --secondary-color: #00f2fe;
+  --focus-color: #007bff;
+  --text-color: #333;
+  --border-radius: 12px;
+  --shadow-color: rgba(0,0,0,0.2);
+  --font-family: "Segoe UI", Roboto, sans-serif;
+}
+
+body {
+  font-family: var(--font-family);
+  background: linear-gradient(135deg, #4facfe, #00f2fe);
+  color: var(--text-color);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  margin: 0;
+}
+
+h1 {
+  font-size: 2.5rem;
+  color: #fff;
+  margin-bottom: 20px;
+  text-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.form {
+  background: #fff;
+  padding: 30px 40px;
+  border-radius: 16px;
+  box-shadow: 0 8px 20px var(--shadow-color);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+}
+
+.form__input-label {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #444;
+  text-align: left;
+}
+
+.form__input {
+  padding: 10px;
+  border: 2px dashed var(--primary-color);
+  border-radius: var(--border-radius);
+  background: #f9f9f9;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.form__input:hover,
+.form__input:focus {
+  border-color: var(--secondary-color);
+  background: #f0faff;
+}
+
+.form__button {
+  background: var(--primary-gradient);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 12px;
+  border: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.form__button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px var(--shadow-color);
+}
+
+.form__button:active {
+  transform: scale(0.98);
+}
+
+.form__select {
+  width: 100%;
+  padding: 10px 40px 10px 15px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background-color: #fff;
+  color: #333;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'><polyline points='0,0 5,5 10,0' style='fill:none;stroke:%23666;stroke-width:2'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 15px center;
+  background-size: 10px 10px;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form__select:hover {
+  border-color: var(--secondary-color);
+}
+
+.form__select:focus {
+  outline: none;
+  border-color: var(--focus-color);
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+}
+
+.form__select option {
+  padding: 10px;
+  background-color: #fff;
+  color: #333;
+}
