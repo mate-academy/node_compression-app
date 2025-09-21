@@ -1,155 +1,108 @@
 'use strict';
 
 const http = require('http');
-const fs = require('fs');
-const path = require('path');
 const zlib = require('zlib');
-const Busboy = require('busboy');
-const { pipeline } = require('stream');
+const fs = require('fs');
+const formidable = require('formidable');
 
+// Lorem2 ipsum dolor sit amet, consectetur adipiscing elit.
 function createServer() {
-  const server = new http.Server();
-  const typesCompress = ['gzip', 'deflate', 'br'];
-
-  server.on('request', (req, res) => {
-    const url = new URL(req.url, `http://${req.headers.host}`);
-    const indexName = url.pathname.slice(1) || 'index.html';
-    const filePath = path.resolve('public', indexName);
-
-    if (req.url === '/compress' && req.method === 'GET') {
-      res.writeHead(400, { 'Content-Type': 'text/html' });
-      res.end('need POST method');
+  return http.createServer((req, res) => {
+    if (req.url === '/') {
+      res.writeHead(200, { 'Content-Type': 'text/html' });
+      res.end('<h1>Welcome to the File Upload Server</h1>');
 
       return;
     }
 
-    if (req.method === 'GET') {
-      if (!fs.existsSync(filePath)) {
-        res.writeHead(404, { 'Content-Type': 'text/plain' });
-        res.end('file not found');
+    if (req.url !== '/compress') {
+      res.writeHead(404, { 'Content-Type': 'text/plain' });
+      res.end('Not Found');
+
+      return;
+    }
+
+    if (req.method !== 'POST') {
+      res.writeHead(400, { 'Content-Type': 'text/plain' });
+      res.end('Bad Request: POST method required');
+
+      return;
+    }
+
+    const form = new formidable.IncomingForm();
+
+    form.parse(req, (err, fields, files) => {
+      if (err) {
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        res.end('Internal Server Error');
 
         return;
       }
 
-      try {
-        const file = fs.readFileSync(filePath);
+      const file = Array.isArray(files.file) ? files.file[0] : files.file;
+      const allowedTypes = ['gzip', 'deflate', 'br'];
+      const compressionType = Array.isArray(fields.compressionType)
+        ? fields.compressionType[0]
+        : fields.compressionType;
 
-        res.writeHead(200, { 'Content-Type': 'text/html' });
-        res.end(file);
-      } catch {
-        res.writeHead(404, { 'Content-Type': 'text/plain' });
-        res.end('file not found');
+      if (!file || !file.filepath || !compressionType) {
+        res.writeHead(400, { 'Content-Type': 'text/plain' });
+        res.end('Bad Request: No file uploaded');
+
+        return;
       }
 
-      return;
-    }
+      if (!allowedTypes.includes(compressionType)) {
+        res.writeHead(400, { 'Content-Type': 'text/plain' });
+        res.end('Bad Request: Unsupported compression type');
 
-    if (req.method === 'POST' && req.url === '/compress') {
-      const busboy = new Busboy({ headers: req.headers });
-      let compressType = null;
-      let fileStream = null;
-      let originalName = null;
+        return;
+      }
 
-      busboy.on('field', (fieldName, value) => {
-        if (fieldName !== 'compressionType') {
+      let compressor;
+      let extension;
+      let contentTypeName;
+
+      switch (compressionType) {
+        case 'gzip':
+          compressor = zlib.createGzip();
+          extension = '.gz'; // коротке розширення
+          contentTypeName = 'gzip'; // для заголовка
+          break;
+        case 'deflate':
+          compressor = zlib.createDeflate();
+          extension = '.dfl';
+          contentTypeName = 'deflate';
+          break;
+        case 'br':
+          compressor = zlib.createBrotliCompress();
+          // eslint-disable-next-line no-unused-vars
+          extension = '.br';
+          contentTypeName = 'br';
+          break;
+        default:
           res.writeHead(400, { 'Content-Type': 'text/plain' });
-          res.end('invalid form: field must be "compressionType"');
+          res.end('Bad Request: Unsupported compression type');
 
           return;
-        }
+      }
 
-        if (!typesCompress.includes(value)) {
-          res.writeHead(400, { 'Content-Type': 'text/plain' });
-          res.end('invalid form: compression type not supported');
+      const originalFileName = file.originalFilename || 'uploaded_file';
+      // const compressedFileName = `${originalFileName}${extension}`;
 
-          return;
-        }
-        compressType = value;
+      // Передаємо у Content-Disposition повне ім’я алгоритму
+      res.writeHead(200, {
+        'Content-Type': 'application/octet-stream',
+        'Content-Disposition': `attachment; filename=${originalFileName}.${contentTypeName}`,
       });
 
-      busboy.on('file', (fieldName, stream, info) => {
-        if (fieldName !== 'file') {
-          res.writeHead(400, { 'Content-Type': 'text/plain' });
-          res.end('invalid form: field must be "file"');
-          stream.resume();
+      const inputStream = fs.createReadStream(file.filepath);
 
-          return;
-        }
-
-        if (!info.filename) {
-          res.writeHead(400, { 'Content-Type': 'text/plain' });
-          res.end('invalid form: no filename');
-          stream.resume();
-
-          return;
-        }
-        fileStream = stream;
-        originalName = info.filename;
-      });
-
-      busboy.on('finish', () => {
-        if (!fileStream) {
-          res.writeHead(400, { 'Content-Type': 'text/plain' });
-          res.end('file missing');
-
-          return;
-        }
-
-        if (!compressType) {
-          res.writeHead(400, { 'Content-Type': 'text/plain' });
-          res.end('compressionType missing');
-
-          return;
-        }
-
-        let transform;
-        let ext;
-
-        if (compressType === 'gzip') {
-          transform = zlib.createGzip();
-          ext = '.gz';
-        } else if (compressType === 'deflate') {
-          transform = zlib.createDeflate();
-          ext = '.dfl';
-        } else if (compressType === 'br') {
-          transform = zlib.createBrotliCompress();
-          ext = '.br';
-        } else {
-          res.writeHead(400, { 'Content-Type': 'text/plain' });
-          res.end('invalid compression type');
-
-          return;
-        }
-
-        const newName = path.basename(originalName) + ext;
-
-        res.writeHead(200, {
-          'Content-Type': 'application/octet-stream',
-          'Content-Disposition': `attachment; filename="${newName}"`,
-        });
-
-        pipeline(fileStream, transform, res, (err) => {
-          if (err) {
-            console.error('Pipeline failed:', err);
-
-            if (!res.headersSent) {
-              res.writeHead(500, { 'Content-Type': 'text/plain' });
-            }
-            res.end('compression error');
-          }
-        });
-      });
-
-      req.pipe(busboy);
-
-      return;
-    }
-
-    res.writeHead(404, { 'Content-Type': 'text/plain' });
-    res.end('Not Found');
+      inputStream.pipe(compressor).pipe(res);
+    });
   });
-
-  return server;
 }
 
-module.exports = { createServer };
+module.exports = {
+  createServer,
+};
