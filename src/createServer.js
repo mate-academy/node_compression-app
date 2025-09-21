@@ -3,8 +3,9 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
-const { Readable } = require('stream');
 const zlib = require('zlib');
+const Busboy = require('busboy');
+const { pipeline } = require('stream');
 
 function createServer() {
   const server = new http.Server();
@@ -16,156 +17,139 @@ function createServer() {
     const filePath = path.resolve('public', indexName);
 
     if (req.url === '/compress' && req.method === 'GET') {
-      res.statusCode = 400;
-      res.setHeader('Content-Type', 'text/html');
-      res.end('need post method');
+      res.writeHead(400, { 'Content-Type': 'text/html' });
+      res.end('need POST method');
 
       return;
     }
 
-    if (!fs.existsSync(filePath) && req.method === 'GET') {
-      res.statusCode = 404;
-      res.end('file not found');
-
-      return;
-    }
-
-    if (req.url === '/' && req.method === 'GET') {
-      try {
-        const file = fs.readFileSync(filePath);
-
-        res.statusCode = 200;
-        res.setHeader('Content-Type', 'text/html');
-        res.end(file);
-      } catch {
-        res.setHeader('Content-Type', 'text/html');
-        res.statusCode = 404;
-        res.end('file not  found');
+    if (req.method === 'GET') {
+      if (!fs.existsSync(filePath)) {
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.end('file not found');
 
         return;
       }
+
+      try {
+        const file = fs.readFileSync(filePath);
+
+        res.writeHead(200, { 'Content-Type': 'text/html' });
+        res.end(file);
+      } catch {
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.end('file not found');
+      }
+
+      return;
     }
 
     if (req.method === 'POST' && req.url === '/compress') {
-      const chunks = [];
+      const busboy = new Busboy({ headers: req.headers });
+      let compressType = null;
+      let fileStream = null;
+      let originalName = null;
 
-      req.on('data', (chunk) => {
-        chunks.push(chunk);
+      busboy.on('field', (fieldName, value) => {
+        if (fieldName !== 'compressionType') {
+          res.writeHead(400, { 'Content-Type': 'text/plain' });
+          res.end('invalid form: field must be "compressionType"');
+
+          return;
+        }
+
+        if (!typesCompress.includes(value)) {
+          res.writeHead(400, { 'Content-Type': 'text/plain' });
+          res.end('invalid form: compression type not supported');
+
+          return;
+        }
+        compressType = value;
       });
 
-      req.on('end', () => {
-        const file = Buffer.concat(chunks).toString();
-        const contentType = req.headers['content-type'].split('boundary=')[1];
-        const infoArray = file.split(`--${contentType}`);
-        const clearArray = infoArray
-          .map((part) => part.trim())
-          .filter((part) => part.length > 0)
-          .toString();
-
-        let fileName;
-        let compressType;
-
-        const filePartName = clearArray.split('filename=')[1];
-
-        if (filePartName) {
-          fileName = filePartName.split('\r\n')[0].replace(/"/g, '');
-        }
-
-        const compressTypePart = clearArray.split('compressionType')[1];
-
-        if (compressTypePart) {
-          compressType = compressTypePart
-            .replace(/"/g, '')
-            .split(',')[0]
-            .trim();
-        }
-
-        if (!fileName) {
-          res.statusCode = 400;
-          res.end('invalid form');
+      busboy.on('file', (fieldName, stream, info) => {
+        if (fieldName !== 'file') {
+          res.writeHead(400, { 'Content-Type': 'text/plain' });
+          res.end('invalid form: field must be "file"');
+          stream.resume();
 
           return;
         }
 
-        if (!compressType || !typesCompress.includes(compressType)) {
-          res.statusCode = 400;
-          res.end('invalid form');
+        if (!info.filename) {
+          res.writeHead(400, { 'Content-Type': 'text/plain' });
+          res.end('invalid form: no filename');
+          stream.resume();
+
+          return;
+        }
+        fileStream = stream;
+        originalName = info.filename;
+      });
+
+      busboy.on('finish', () => {
+        if (!fileStream) {
+          res.writeHead(400, { 'Content-Type': 'text/plain' });
+          res.end('file missing');
 
           return;
         }
 
-        const biteFile = Buffer.concat(chunks);
+        if (!compressType) {
+          res.writeHead(400, { 'Content-Type': 'text/plain' });
+          res.end('compressionType missing');
 
-        const boundary = Buffer.from(`--${contentType}`);
-        const start = biteFile.indexOf(boundary) + boundary.length;
-        const end = biteFile.indexOf(boundary, start);
-        const filePart = biteFile.slice(start, end);
-        const headerEnd = filePart.indexOf('\r\n\r\n');
-        let fileBuffer = filePart.slice(headerEnd + 4);
-
-        if (fileBuffer.slice(-2).toString() === '\r\n') {
-          fileBuffer = fileBuffer.slice(0, -2);
+          return;
         }
 
-        const fileStream = Readable.from(fileBuffer);
+        let transform;
+        let ext;
 
         if (compressType === 'gzip') {
-          const gzip = zlib.createGzip();
-          const newFileName = fileName + '.gzip';
-          const safeFileName = newFileName.replace(/[\r\n]/g, '').trim();
+          transform = zlib.createGzip();
+          ext = '.gz';
+        } else if (compressType === 'deflate') {
+          transform = zlib.createDeflate();
+          ext = '.dfl';
+        } else if (compressType === 'br') {
+          transform = zlib.createBrotliCompress();
+          ext = '.br';
+        } else {
+          res.writeHead(400, { 'Content-Type': 'text/plain' });
+          res.end('invalid compression type');
 
-          res.statusCode = 200;
-          res.setHeader('Content-Type', 'application/gzip');
-
-          res.setHeader(
-            'Content-Disposition',
-            `attachment; filename=${safeFileName}`,
-          );
-          fileStream.pipe(gzip);
-          gzip.pipe(res);
+          return;
         }
 
-        if (compressType === 'deflate') {
-          const deflate = zlib.createDeflate();
-          const newFileName = fileName + '.deflate';
+        const newName = path.basename(originalName) + ext;
 
-          res.statusCode = 200;
-          res.setHeader('Content-Type', 'application/deflate');
+        res.writeHead(200, {
+          'Content-Type': 'application/octet-stream',
+          'Content-Disposition': `attachment; filename="${newName}"`,
+        });
 
-          res.setHeader(
-            'Content-Disposition',
-            `attachment; filename=${newFileName}`,
-          );
-          fileStream.pipe(deflate);
-          deflate.pipe(res);
-        }
+        pipeline(fileStream, transform, res, (err) => {
+          if (err) {
+            console.error('Pipeline failed:', err);
 
-        if (compressType === 'br') {
-          const br = zlib.createBrotliCompress();
-          const newFileName = fileName + '.br';
-
-          res.statusCode = 200;
-          res.setHeader('Content-Type', 'application/br');
-
-          res.setHeader(
-            'Content-Disposition',
-            `attachment; filename=${newFileName}`,
-          );
-          fileStream.pipe(br);
-          br.pipe(res);
-        }
-
-        fileStream.on('error', () => {
-          res.statusCode = 404;
-          res.end('need file');
+            if (!res.headersSent) {
+              res.writeHead(500, { 'Content-Type': 'text/plain' });
+            }
+            res.end('compression error');
+          }
         });
       });
+
+      req.pipe(busboy);
+
+      return;
     }
+
+    res.writeHead(404, { 'Content-Type': 'text/plain' });
+    res.end('Not Found');
   });
 
   return server;
 }
 
-module.exports = {
-  createServer,
-};
+module.exports = { createServer };
