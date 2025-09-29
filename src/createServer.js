@@ -91,9 +91,7 @@ function createServer() {
       // const compressedFileName = `${originalFileName}${extension}`;
 
       // Передаємо у Content-Disposition повне ім’я алгоритму
-      res.writeHead(200, {
-        'Content-Type': 'application/octet-stream',
-        'Content-Disposition': `attachment; filename=${originalFileName}.${contentTypeName}`,
+
       });
 
       const inputStream = fs.createReadStream(file.filepath);
