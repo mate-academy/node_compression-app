@@ -29,6 +29,12 @@ function createServer() {
       }
     }
 
+    const types = {
+      gzip: '.gz',
+      deflate: '.dfl',
+      br: '.br',
+    };
+
     let cleaned = false;
 
     function cleanup(pass, busboy, compressor = null) {
@@ -56,7 +62,7 @@ function createServer() {
     }
 
     if (normalizedUrl.pathname === '/compress') {
-      if (req.method === 'GET') {
+      if (req.method !== 'POST') {
         res.statusCode = 400;
         res.end(`${res.statusCode}: Bad Request`);
 
@@ -113,14 +119,28 @@ function createServer() {
       });
 
       busboy.on('finish', () => {
-        if (!gotType || !isValid || !pass || !fileInfo.filename) {
+        if (!gotType) {
           res.statusCode = 400;
-          res.end('Unsupported compression type');
+          res.end('Missing or invalid compressionType');
 
           return;
         }
 
-        const { filename, mimeType } = fileInfo;
+        if (!isValid) {
+          res.statusCode = 400;
+          res.end('Invalid file field');
+
+          return;
+        }
+
+        if (!pass || !fileInfo.filename) {
+          res.statusCode = 400;
+          res.end('Missing file stream or filename');
+
+          return;
+        }
+
+        const { filename } = fileInfo;
         const compressor = selectCompressor(compressionType);
 
         if (!compressor) {
@@ -137,17 +157,23 @@ function createServer() {
         });
 
         res.statusCode = 200;
-        res.setHeader('Content-Type', mimeType);
+        res.setHeader('Content-Type', 'application/octet-stream');
 
         res.setHeader(
           'Content-Disposition',
-          `attachment; filename=${`${filename}.${compressionType}` || ''}`,
+          `attachment; filename=${`${filename}${types[compressionType]}` || ''}`,
         );
 
         pipeline(pass, compressor, res, (err) => {
           if (err) {
-            res.statusCode = 400;
-            res.end(`Pipeline error: ${String(err)}`);
+            cleanup(pass, busboy, compressor);
+
+            if (!res.writableEnded && !res.headersSent) {
+              res.statusCode = 400;
+              res.end(`Pipeline error: ${String(err)}`);
+            } else {
+              res.destroy(err);
+            }
           }
         });
       });

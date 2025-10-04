@@ -9,5 +9,3 @@ createServer().listen(5700, () => {
   console.log('Server started! 🚀');
   console.log('Available at http://localhost:5700');
 });
-
-createServer().close();
