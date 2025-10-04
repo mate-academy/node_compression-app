@@ -69,7 +69,7 @@ function createServer() {
         return;
       }
 
-      const busboy = Busboy({ headers: req.headers });
+      const busboy = new Busboy({ headers: req.headers });
 
       let pass = null;
       let fileInfo = null;
@@ -145,6 +145,7 @@ function createServer() {
 
         if (!compressor) {
           res.statusCode = 400;
+          res.end('Unsupported compression type');
           cleanup(pass, busboy, compressor);
 
           return;
@@ -152,8 +153,13 @@ function createServer() {
 
         compressor.on('error', (err) => {
           cleanup(pass, busboy, compressor);
-          res.statusCode = 400;
-          res.end(`Stream error: ${String(err)}`);
+
+          if (!res.headersSent && !res.writableEnded) {
+            res.statusCode = 400;
+            res.end(`Stream error: ${String(err)}`);
+          } else {
+            res.destroy(err);
+          }
         });
 
         res.statusCode = 200;
@@ -161,7 +167,7 @@ function createServer() {
 
         res.setHeader(
           'Content-Disposition',
-          `attachment; filename=${`${filename}${types[compressionType]}` || ''}`,
+          `attachment; filename="${filename + types[compressionType]}"`,
         );
 
         pipeline(pass, compressor, res, (err) => {
