@@ -5,7 +5,7 @@ const path = require('path');
 const zlib = require('node:zlib');
 const { Readable } = require('stream');
 
-const extMap = { gzip: 'gz', deflate: 'dfl', br: 'br' };
+const extMap = { gzip: 'gzip', deflate: 'deflate', br: 'br' };
 
 function createServer() {
   return http.createServer(async (req, res) => {
