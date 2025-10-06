@@ -32,7 +32,6 @@ function createServer() {
   <form action="/compress" method="POST" enctype="multipart/form-data">
     <input type="file" name="file" required><br><br>
     <select name="compressionType" required>
-      <option value="">Select type</option>
       <option value="gzip">Gzip</option>
       <option value="deflate">Deflate</option>
       <option value="br">Brotli</option>
@@ -111,8 +110,8 @@ function createServer() {
       };
 
       const extensions = {
-        gzip: '.gzip',
-        deflate: '.deflate',
+        gzip: '.gz',
+        deflate: '.dfl',
         br: '.br',
       };
 
