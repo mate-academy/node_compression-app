@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <main>
+    <h1>File Compression</h1>
+
+    <form action="/compress" method="post" enctype="multipart/form-data">
+      <label for="file">Select a file: </label>
+      <input type="file" name="file" id="file" required>
+
+      <br>
+      <br>
+
+      <label for="type">Select a compression type: </label>
+      <select name="compressionType" id="type" required>
+        <option value="gzip">gzip</option>
+        <option value="deflate">deflate</option>
+        <option value="br">br</option>
+      </select>
+
+      <br>
+      <br>
+
+      <button type="submit">Submit</button>
+    </form>
+  </main>
+
+</body>
+</html>
