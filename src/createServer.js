@@ -31,7 +31,7 @@ function createServer() {
           return res.end('Error parsing form');
         }
 
-        const compressionType = (fields.compressionType?.[0] || '')
+        const compressionType = String(fields.compressionType || '')
           .trim()
           .toLowerCase();
 
@@ -74,6 +74,9 @@ function createServer() {
           case 'br':
             compressStream = zlib.createBrotliCompress();
             break;
+          default:
+            compressStream = zlib.createGzip();
+            break;
         }
 
         const readStream = fs.createReadStream(uploadedFilePath);
@@ -96,18 +99,13 @@ function createServer() {
         readStream.pipe(compressStream).pipe(res);
       });
     } else if (req.url === '/compress') {
-      if (req.method !== 'POST') {
-        res.statusCode = 400;
+      res.statusCode = 400;
 
-        return res.end('GET not allowed on /compress');
-      }
-      res.statusCode = 404;
-
-      return res.end('Not Found');
+      return res.end('Only POST allowed on /compress');
     } else {
       res.statusCode = 404;
 
-      return res.end('Not Foound');
+      return res.end('Not Found');
     }
   });
 }
