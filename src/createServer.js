@@ -31,19 +31,17 @@ function createServer() {
           return res.end('Error parsing form');
         }
 
-        const compressionType = (fields.compressionType?.[0] || '')
-          .trim()
-          .toLowerCase();
+        const compressionType = String(fields.compressionType || '');
 
         const supported = ['gzip', 'deflate', 'br'];
 
         if (!supported.includes(compressionType)) {
           res.statusCode = 400;
 
-          return res.end('Unsupported compresion type');
+          return res.end('Unsupported compression type');
         }
 
-        const fileData = files.file?.[0];
+        const fileData = files.file;
 
         if (!fileData) {
           res.statusCode = 400;
@@ -51,8 +49,8 @@ function createServer() {
           return res.end('Error parsing file');
         }
 
-        const uploadedFilePath = files.file?.[0].filepath;
-        const originalName = files.file?.[0]?.originalFilename;
+        const uploadedFilePath = files.file.filepath;
+        const originalName = files.file.originalFilename;
         const originalNameSafe = originalName || 'file';
 
         if (!uploadedFilePath) {
@@ -75,14 +73,27 @@ function createServer() {
             break;
         }
 
-        const ext = compressionType;
+        const extMap = { gzip: 'gz', deflate: 'dfl', br: 'br' };
+        const ext = extMap[compressionType];
 
         res.writeHead(200, {
           'Content-Type': 'application/octet-stream',
           'Content-Disposition': `attachment; filename=${originalNameSafe}.${ext}`,
         });
 
-        fs.createReadStream(uploadedFilePath).pipe(compressStream).pipe(res);
+        const readStream = fs.createReadStream(uploadedFilePath);
+
+        readStream.on('error', () => {
+          res.statusCode = 500;
+          res.end('Error reading file');
+        });
+
+        compressStream.on('error', () => {
+          res.statusCode = 500;
+          res.end('Error compressing file');
+        });
+
+        readStream.pipe(compressStream).pipe(res);
       });
     } else if (req.url === '/compress') {
       if (req.method !== 'POST') {
@@ -96,7 +107,7 @@ function createServer() {
     } else {
       res.statusCode = 404;
 
-      return res.end('Not FOound');
+      return res.end('Not Foound');
     }
   });
 }
