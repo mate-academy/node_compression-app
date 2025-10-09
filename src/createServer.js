@@ -74,9 +74,6 @@ function createServer() {
           case 'br':
             compressStream = zlib.createBrotliCompress();
             break;
-          default:
-            compressStream = zlib.createGzip();
-            break;
         }
 
         const readStream = fs.createReadStream(uploadedFilePath);
