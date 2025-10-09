@@ -31,7 +31,9 @@ function createServer() {
           return res.end('Error parsing form');
         }
 
-        const compressionType = String(fields.compressionType || '');
+        const compressionType = (fields.compressionType?.[0] || '')
+          .trim()
+          .toLowerCase();
 
         const supported = ['gzip', 'deflate', 'br'];
 
@@ -41,7 +43,7 @@ function createServer() {
           return res.end('Unsupported compression type');
         }
 
-        const fileData = files.file;
+        const fileData = files.file?.[0];
 
         if (!fileData) {
           res.statusCode = 400;
@@ -49,9 +51,10 @@ function createServer() {
           return res.end('Error parsing file');
         }
 
-        const uploadedFilePath = files.file.filepath;
-        const originalName = files.file.originalFilename;
-        const originalNameSafe = originalName || 'file';
+        const uploadedFile = files.file?.[0];
+        const uploadedFilePath = uploadedFile?.filepath;
+
+        const originalNameSafe = uploadedFile.originalFilename || 'file';
 
         if (!uploadedFilePath) {
           res.statusCode = 400;
@@ -73,14 +76,6 @@ function createServer() {
             break;
         }
 
-        const extMap = { gzip: 'gz', deflate: 'dfl', br: 'br' };
-        const ext = extMap[compressionType];
-
-        res.writeHead(200, {
-          'Content-Type': 'application/octet-stream',
-          'Content-Disposition': `attachment; filename=${originalNameSafe}.${ext}`,
-        });
-
         const readStream = fs.createReadStream(uploadedFilePath);
 
         readStream.on('error', () => {
@@ -91,6 +86,11 @@ function createServer() {
         compressStream.on('error', () => {
           res.statusCode = 500;
           res.end('Error compressing file');
+        });
+
+        res.writeHead(200, {
+          'Content-Type': 'application/octet-stream',
+          'Content-Disposition': `attachment; filename=${originalNameSafe}.${compressionType}`,
         });
 
         readStream.pipe(compressStream).pipe(res);
