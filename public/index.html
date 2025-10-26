@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Compression App</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="main-container">
+      <h1 class="main-header">Welcome to Free Compression Server</h1>
+
+      <form
+        class="input-form"
+        method="post"
+        enctype="multipart/form-data"
+        action="http://localhost:5700/compress"
+      >
+        <input type="file" name="filePicker" id="filePicker" required />
+        <select name="compressionType" id="compressionTypeSelect" required>
+          <option value="" selected disabled>
+            Please choose a compression type
+          </option>
+          <option value="gzip" selected>gzip</option>
+          <option value="deflate">deflate</option>
+          <option value="br">br</option>
+        </select>
+        <button type="submit">Compress!</button>
+      </form>
+    </div>
+  </body>
+</html>
