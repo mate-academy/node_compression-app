@@ -100,7 +100,7 @@ function createServer() {
 
         const compressionType = fields.compressionType[0];
 
-        const uploadedFile = files.filePicker[0];
+        const uploadedFile = files.file[0];
 
         // double sanity for non-valid input
         if (!compressionType || !uploadedFile) {
@@ -137,17 +137,9 @@ function createServer() {
               // ERR_RESPONSE_HEADERS_MULTIPLE_CONTENT_DISPOSITION
 
               const zippedFilePath =
-                path.basename(correctUploadedFilePath) + '.gzip';
+                path.basename(correctUploadedFilePath) + '.gz';
 
               mimeType = mime.contentType('gzip');
-
-              pipeline(readStream, gzip, res, (error) => {
-                res.statusCode = 500;
-                res.end(`Error while piping: ${error}`);
-              });
-
-              // and if everything is OK, let's finalize
-              // our Response with all needed headers
               res.statusCode = 200;
 
               res.setHeader(
@@ -160,6 +152,14 @@ function createServer() {
               res.on('close', () => {
                 readStream.destroy();
               });
+
+              pipeline(readStream, gzip, res, (error) => {
+                res.statusCode = 500;
+                res.end(`Error while piping: ${error}`);
+              });
+
+              // and if everything is OK, let's finalize
+              // our Response with all needed headers
 
               return;
             }
@@ -176,13 +176,6 @@ function createServer() {
 
               mimeType = mime.contentType('deflate');
 
-              pipeline(readStream, deflate, res, (error) => {
-                res.statusCode = 500;
-                res.end(`Error while piping: ${error}`);
-              });
-
-              // and if everything is OK, let's finalize
-              // our Response with all needed headers
               res.statusCode = 200;
 
               res.setHeader(
@@ -195,6 +188,14 @@ function createServer() {
               res.on('close', () => {
                 readStream.destroy();
               });
+
+              pipeline(readStream, deflate, res, (error) => {
+                res.statusCode = 500;
+                res.end(`Error while piping: ${error}`);
+              });
+
+              // and if everything is OK, let's finalize
+              // our Response with all needed headers
 
               return;
             }
@@ -211,11 +212,6 @@ function createServer() {
 
               mimeType = mime.contentType('br');
 
-              pipeline(readStream, deflate, res, (error) => {
-                res.statusCode = 500;
-                res.end(`Error while piping: ${error}`);
-              });
-
               // and if everything is OK, let's finalize
               // our Response with all needed headers
               res.statusCode = 200;
@@ -229,6 +225,11 @@ function createServer() {
 
               res.on('close', () => {
                 readStream.destroy();
+              });
+
+              pipeline(readStream, deflate, res, (error) => {
+                res.statusCode = 500;
+                res.end(`Error while piping: ${error}`);
               });
 
               return;
