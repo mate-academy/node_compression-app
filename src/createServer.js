@@ -22,6 +22,8 @@ function createServer() {
       if (!fs.existsSync(INDEX_PATH)) {
         res.statusCode = 404;
         res.end('Not Found Page');
+
+        return;
       }
 
       const file = fs.createReadStream(INDEX_PATH);
@@ -51,6 +53,8 @@ function createServer() {
 
       if (!fs.existsSync(STYLES_PATH)) {
         res.end('');
+
+        return;
       }
 
       const cssFile = fs.createReadStream(STYLES_PATH);
@@ -89,6 +93,8 @@ function createServer() {
         if (err) {
           res.statusCode = 400;
           res.end(err);
+
+          return;
         }
         // let's fetch compressionType & file obiviosly
 
@@ -100,6 +106,8 @@ function createServer() {
         if (!compressionType || !uploadedFile) {
           res.statusCode = 400;
           res.end('Invalid input!');
+
+          return;
         }
 
         // let's rename uploaded file to it's original filename
@@ -113,135 +121,125 @@ function createServer() {
           if (_err) {
             res.statusCode = 500;
             res.end('Error while renaming uploaded file!');
+
+            return;
+          }
+
+          const readStream = fs.createReadStream(correctUploadedFilePath);
+
+          // if everything is OK, let's pipe uploaded file to chosen compression
+          switch (compressionType) {
+            case 'gzip': {
+              const gzip = zlib.createGzip();
+
+              // let's get rid from whitespaces(if present) in original filename
+              // because they can provoke an error:
+              // ERR_RESPONSE_HEADERS_MULTIPLE_CONTENT_DISPOSITION
+
+              const zippedFilePath =
+                path.basename(correctUploadedFilePath) + '.gzip';
+
+              mimeType = mime.contentType('gzip');
+
+              pipeline(readStream, gzip, res, (error) => {
+                res.statusCode = 500;
+                res.end(`Error while piping: ${error}`);
+              });
+
+              // and if everything is OK, let's finalize
+              // our Response with all needed headers
+              res.statusCode = 200;
+
+              res.setHeader(
+                'Content-Disposition',
+                `attachment; filename=${zippedFilePath}`,
+              );
+              res.setHeader('Content-Type', mimeType);
+              res.setHeader('Content-Encoding', 'gzip');
+
+              res.on('close', () => {
+                readStream.destroy();
+              });
+
+              return;
+            }
+
+            case 'deflate': {
+              const deflate = zlib.createDeflate();
+
+              // let's get rid from whitespaces(if present) in original filename
+              // because they can provoke an error:
+              // ERR_RESPONSE_HEADERS_MULTIPLE_CONTENT_DISPOSITION
+
+              const zippedFilePath =
+                path.basename(correctUploadedFilePath) + '.dfl';
+
+              mimeType = mime.contentType('deflate');
+
+              pipeline(readStream, deflate, res, (error) => {
+                res.statusCode = 500;
+                res.end(`Error while piping: ${error}`);
+              });
+
+              // and if everything is OK, let's finalize
+              // our Response with all needed headers
+              res.statusCode = 200;
+
+              res.setHeader(
+                'Content-Disposition',
+                `attachment; filename=${zippedFilePath}`,
+              );
+              res.setHeader('Content-Type', mimeType);
+              res.setHeader('Content-Encoding', 'deflate');
+
+              res.on('close', () => {
+                readStream.destroy();
+              });
+
+              return;
+            }
+
+            case 'br': {
+              const deflate = zlib.createBrotliCompress();
+
+              // let's get rid from whitespaces(if present) in original filename
+              // because they can provoke an error:
+              // ERR_RESPONSE_HEADERS_MULTIPLE_CONTENT_DISPOSITION
+
+              const zippedFilePath =
+                path.basename(correctUploadedFilePath) + '.br';
+
+              mimeType = mime.contentType('br');
+
+              pipeline(readStream, deflate, res, (error) => {
+                res.statusCode = 500;
+                res.end(`Error while piping: ${error}`);
+              });
+
+              // and if everything is OK, let's finalize
+              // our Response with all needed headers
+              res.statusCode = 200;
+
+              res.setHeader(
+                'Content-Disposition',
+                `attachment; filename=${zippedFilePath}`,
+              );
+              res.setHeader('Content-Type', mimeType);
+              res.setHeader('Content-Encoding', 'br');
+
+              res.on('close', () => {
+                readStream.destroy();
+              });
+
+              return;
+            }
+
+            default: {
+              res.statusCode = 400;
+              res.end('Wrong type of compression sended!');
+            }
           }
         });
-
-        const readStream = fs.createReadStream(correctUploadedFilePath);
-
-        // if everything is OK, let's pipe uploaded file to chosen compression
-        switch (compressionType) {
-          case 'gzip': {
-            const gzip = zlib.createGzip();
-
-            // let's get rid from whitespaces (if present) in original filename
-            // because they can provoke an error:
-            // ERR_RESPONSE_HEADERS_MULTIPLE_CONTENT_DISPOSITION
-
-            const zippedFilePath =
-              path
-                .basename(correctUploadedFilePath)
-                .replaceAll(' ', '-')
-                .replaceAll(',', '-')
-                .replaceAll('.', '-') + '.gzip';
-
-            mimeType = mime.contentType('gzip');
-
-            pipeline(readStream, gzip, res, (error) => {
-              res.statusCode = 500;
-              res.end(`Error while piping: ${error}`);
-            });
-
-            // and if everything is OK, let's finalize
-            // our Response with all needed headers
-            res.statusCode = 200;
-
-            res.setHeader(
-              'Content-Disposition',
-              `attachment; filename=${zippedFilePath}`,
-            );
-            res.setHeader('Content-Type', mimeType);
-            res.setHeader('Content-Encoding', 'gzip');
-
-            res.on('close', () => {
-              readStream.destroy();
-            });
-
-            return;
-          }
-
-          case 'deflate': {
-            const deflate = zlib.createDeflate();
-
-            // let's get rid from whitespaces (if present) in original filename
-            // because they can provoke an error:
-            // ERR_RESPONSE_HEADERS_MULTIPLE_CONTENT_DISPOSITION
-
-            const zippedFilePath =
-              path
-                .basename(correctUploadedFilePath)
-                .replaceAll(' ', '-')
-                .replaceAll(',', '-')
-                .replaceAll('.', '-') + '.dfl';
-
-            mimeType = mime.contentType('deflate');
-
-            pipeline(readStream, deflate, res, (error) => {
-              res.statusCode = 500;
-              res.end(`Error while piping: ${error}`);
-            });
-
-            // and if everything is OK, let's finalize
-            // our Response with all needed headers
-            res.statusCode = 200;
-
-            res.setHeader(
-              'Content-Disposition',
-              `attachment; filename=${zippedFilePath}`,
-            );
-            res.setHeader('Content-Type', mimeType);
-            res.setHeader('Content-Encoding', 'deflate');
-
-            res.on('close', () => {
-              readStream.destroy();
-            });
-
-            return;
-          }
-
-          case 'br': {
-            const deflate = zlib.createBrotliCompress();
-
-            // let's get rid from whitespaces (if present) in original filename
-            // because they can provoke an error:
-            // ERR_RESPONSE_HEADERS_MULTIPLE_CONTENT_DISPOSITION
-
-            const zippedFilePath =
-              path
-                .basename(correctUploadedFilePath)
-                .replaceAll(' ', '-')
-                .replaceAll(',', '-')
-                .replaceAll('.', '-') + '.br';
-
-            mimeType = mime.contentType('br');
-
-            pipeline(readStream, deflate, res, (error) => {
-              res.statusCode = 500;
-              res.end(`Error while piping: ${error}`);
-            });
-
-            // and if everything is OK, let's finalize
-            // our Response with all needed headers
-            res.statusCode = 200;
-
-            res.setHeader(
-              'Content-Disposition',
-              `attachment; filename=${zippedFilePath}`,
-            );
-            res.setHeader('Content-Type', mimeType);
-            res.setHeader('Content-Encoding', 'br');
-
-            res.on('close', () => {
-              readStream.destroy();
-            });
-
-            return;
-          }
-
-          default: {
-            res.statusCode = 400;
-            res.end('Wrong type of compression sended!');
-          }
-        }
       });
 
       return;
