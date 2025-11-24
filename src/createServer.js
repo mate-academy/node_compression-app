@@ -57,7 +57,8 @@ function createServer() {
       });
 
       req.on('end', () => {
-        const bodyStr = body.toString('binary');
+        const bodyStr = body.toString('latin1');
+
         const parts = bodyStr.split(boundary).slice(1, -1);
 
         let fileBuffer = null;
@@ -95,7 +96,7 @@ function createServer() {
               filename = filenameMatch[1];
             }
 
-            fileBuffer = Buffer.from(content, 'binary');
+            fileBuffer = Buffer.from(content, 'latin1');
           }
         }
 
@@ -119,7 +120,6 @@ function createServer() {
           case 'br':
             compressStream = zlib.createBrotliCompress();
             break;
-
           default:
             return sendStatus(res, 400);
         }
