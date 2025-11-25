@@ -3,38 +3,43 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
-const { Readable, pipeline } = require('stream');
+const { Readable, Transform, pipeline } = require('stream');
 const zlib = require('zlib');
 
-const SUPPORTED_TYPES = ['gzip', 'deflate', 'br'];
-
-const indexHtmlPath = path.join(__dirname, 'index.html');
-const indexHtml = fs.readFileSync(indexHtmlPath, 'utf8');
+const SUPPORTED_COMPRESSION_TYPES = ['gzip', 'deflate', 'br'];
 
 function sendStatus(res, code) {
   if (!res.headersSent) {
     res.writeHead(code);
+    res.end();
   }
-  res.end();
 }
 
 function createServer() {
-  return http.createServer((req, res) => {
-    const { url, method } = req;
+  const server = http.createServer((req, res) => {
+    const { method, url } = req;
 
     if (method === 'GET' && url === '/') {
-      res.writeHead(200, { 'content-type': 'text/html' });
-      res.end(indexHtml);
+      const htmlPath = path.join(__dirname, 'index.html');
+
+      const readStream = fs.createReadStream(htmlPath, 'utf8');
+
+      res.writeHead(200, { 'Content-Type': 'text/html' });
+
+      pipeline(readStream, res, (err) => {
+        if (err) {
+          sendStatus(res, 500);
+        }
+      });
 
       return;
     }
 
-    if (method === 'GET' && url === '/favicon.ico') {
-      return sendStatus(res, 204);
-    }
-
+    // GET "/compress" -> 400
     if (method === 'GET' && url === '/compress') {
-      return sendStatus(res, 400);
+      sendStatus(res, 400);
+
+      return;
     }
 
     if (method === 'POST' && url === '/compress') {
@@ -42,113 +47,160 @@ function createServer() {
       const boundaryMatch = contentType.match(/boundary=([^;]+)/i);
 
       if (!boundaryMatch) {
-        return sendStatus(res, 400);
+        sendStatus(res, 400);
+
+        return;
       }
 
-      const boundary = '--' + boundaryMatch[1];
-      let body = Buffer.alloc(0);
+      const boundary = `--${boundaryMatch[1]}`;
+      const boundaryBuf = Buffer.from(boundary);
+      const doubleNewline = Buffer.from('\r\n\r\n');
 
-      req.on('data', (chunk) => {
-        body = Buffer.concat([body, chunk]);
-      });
+      let buffer = Buffer.alloc(0);
+      let fileData = null;
+      let compressionType = null;
+      let filename = 'file';
 
-      req.on('error', () => {
-        return sendStatus(res, 400);
-      });
+      const MAX_BODY_SIZE = 20 * 1024 * 1024;
 
-      req.on('end', () => {
-        const bodyStr = body.toString('latin1');
+      const parser = new Transform({
+        transform(chunk, encoding, callback) {
+          buffer = Buffer.concat([buffer, chunk]);
 
-        const parts = bodyStr.split(boundary).slice(1, -1);
-
-        let fileBuffer = null;
-        let filename = 'file';
-        let compressionType = null;
-
-        for (let part of parts) {
-          part = part.trim();
-
-          if (!part) {
-            continue;
+          if (buffer.length > MAX_BODY_SIZE) {
+            return callback(new Error('Body too large'));
           }
 
-          const [rawHeaders, rawBody] = part.split('\r\n\r\n');
+          callback();
+        },
 
-          if (!rawBody) {
-            continue;
-          }
+        flush(callback) {
+          let searchIndex = 0;
+          const parts = [];
 
-          const headers = rawHeaders;
-          let content = rawBody;
+          while (true) {
+            const boundaryIndex = buffer.indexOf(boundaryBuf, searchIndex);
 
-          if (content.endsWith('\r\n')) {
-            content = content.slice(0, -2);
-          }
-
-          if (headers.includes('name="compressionType"')) {
-            compressionType = content.trim();
-          }
-
-          if (headers.includes('name="file"')) {
-            const filenameMatch = headers.match(/filename="([^"]+)"/);
-
-            if (filenameMatch) {
-              filename = filenameMatch[1];
+            if (boundaryIndex === -1) {
+              break;
             }
 
-            fileBuffer = Buffer.from(content, 'latin1');
+            if (searchIndex > 0) {
+              parts.push(buffer.slice(searchIndex, boundaryIndex));
+            }
+
+            searchIndex = boundaryIndex + boundaryBuf.length;
           }
-        }
 
-        if (!fileBuffer || !compressionType) {
-          return sendStatus(res, 400);
-        }
+          for (const part of parts) {
+            const preview = part.toString(
+              'utf8',
+              0,
+              Math.min(part.length, 200),
+            );
 
-        if (!SUPPORTED_TYPES.includes(compressionType)) {
-          return sendStatus(res, 400);
-        }
+            const headerEnd = part.indexOf(doubleNewline);
 
-        let compressStream;
+            if (headerEnd === -1) {
+              continue;
+            }
 
-        switch (compressionType) {
-          case 'gzip':
-            compressStream = zlib.createGzip();
-            break;
-          case 'deflate':
-            compressStream = zlib.createDeflate();
-            break;
-          case 'br':
-            compressStream = zlib.createBrotliCompress();
-            break;
-          default:
-            return sendStatus(res, 400);
-        }
+            const headersBuf = part.slice(0, headerEnd);
+            const bodyStart = headerEnd + doubleNewline.length;
+            let bodyEnd = part.length;
 
-        const outputName = `${filename}.${compressionType}`;
+            if (
+              bodyEnd >= 2 &&
+              part[bodyEnd - 2] === 0x0d &&
+              part[bodyEnd - 1] === 0x0a
+            ) {
+              bodyEnd -= 2;
+            }
 
-        res.writeHead(200, {
-          'Content-Type': 'application/octet-stream',
-          'Content-Disposition': `attachment; filename=${outputName}`,
-        });
+            const body = part.slice(bodyStart, bodyEnd);
+            const headersStr = headersBuf.toString('utf8');
 
-        const fileStream = Readable.from(fileBuffer);
+            if (preview.includes('name="file"')) {
+              const filenameMatch = headersStr.match(/filename="([^"]+)"/);
 
-        pipeline(fileStream, compressStream, res, (err) => {
-          if (err) {
-            if (!res.headersSent) {
+              if (filenameMatch) {
+                filename = filenameMatch[1];
+              }
+
+              fileData = body;
+            }
+
+            if (preview.includes('name="compressionType"')) {
+              compressionType = body.toString('utf8').trim();
+            }
+          }
+
+          callback();
+        },
+      });
+
+      req
+        .pipe(parser)
+        .on('finish', () => {
+          if (!fileData || !compressionType) {
+            sendStatus(res, 400);
+
+            return;
+          }
+
+          if (!SUPPORTED_COMPRESSION_TYPES.includes(compressionType)) {
+            sendStatus(res, 400);
+
+            return;
+          }
+
+          let compressStream;
+
+          switch (compressionType) {
+            case 'gzip':
+              compressStream = zlib.createGzip();
+              break;
+            case 'deflate':
+              compressStream = zlib.createDeflate();
+              break;
+            case 'br':
+              compressStream = zlib.createBrotliCompress();
+              break;
+            default:
+              sendStatus(res, 400);
+
+              return;
+          }
+
+          const outputFilename = `${filename}.${compressionType}`;
+
+          res.writeHead(200, {
+            'Content-Type': 'application/octet-stream',
+            'Content-Disposition': `attachment; filename=${outputFilename}`,
+          });
+
+          const fileStream = Readable.from(fileData);
+
+          pipeline(fileStream, compressStream, res, (err) => {
+            if (err) {
               sendStatus(res, 500);
-            } else {
-              res.destroy(err);
             }
-          }
+          });
+        })
+        .on('error', () => {
+          sendStatus(res, 400);
         });
-      });
 
       return;
     }
 
-    return sendStatus(res, 404);
+    // 404 для остальных
+    sendStatus(res, 404);
   });
+
+  return server;
 }
 
-module.exports = { createServer };
+module.exports = {
+  createServer,
+};
