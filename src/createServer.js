@@ -25,6 +25,12 @@ function createServer() {
     br: { create: zlib.createBrotliCompress },
   };
 
+  const compressionExtensions = {
+    gzip: 'gz',
+    deflate: 'dfl',
+    br: 'br',
+  };
+
   const acceptableEndpoint = {
     index: {
       path: 'index',
@@ -120,7 +126,7 @@ function createServer() {
 
           const readingFileStream = fsCb.createReadStream(file.filePath);
           const compressionStream = acceptableCompression[type].create();
-          const resFileName = `${file.fileName}.${type}`;
+          const resFileName = `${file.fileName}.${compressionExtensions[type]}`;
 
           res.writeHead(200, {
             'content-type': `application/${field.compressionType}`,
