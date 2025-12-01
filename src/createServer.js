@@ -9,7 +9,11 @@ const { pipeline } = require('stream');
 const busboy = require('busboy');
 
 const form = `<form action="http://localhost:5700/compress" method="POST" enctype="multipart/form-data" style="display: flex; flex-direction: column; max-width: 300px; row-gap: 12px">
-                <input placeholder="Input compression type" type="text" name="compressionType" />
+                <select name="compressionType">
+                  <option value="gzip">gzip</option>
+                  <option value="deflate">deflate</option>
+                  <option value="br">br</option>
+                </select>
                 <input type="file" name="file" />
                 <input type="submit"/>
               </form>`;
@@ -124,8 +128,8 @@ function createServer() {
           });
 
           pipeline(readingFileStream, compressionStream, res, (err) => {
-            // eslint-disable-next-line no-console
-            console.log(err);
+            // eslint-disable-next-line no-console, curly
+            if (err) console.log(err);
           });
         }
       });
