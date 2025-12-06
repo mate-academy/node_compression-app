@@ -6,33 +6,56 @@ const path = require('path');
 const zlib = require('zlib');
 const busboy = require('busboy');
 
+// EXTENSIONS EXPECTED BY TESTS
+const EXT_MAP = {
+  gzip: 'gzip',
+  deflate: 'deflate',
+  br: 'br',
+};
+
 function createServer() {
   const server = new http.Server();
 
   server.on('request', (req, res) => {
     const url = new URL(req.url, `http://${req.headers.host}`);
 
+    // ---------------------------------------------
+    // POST /compress
+    // ---------------------------------------------
     if (req.method === 'POST' && url.pathname === '/compress') {
       const bb = busboy({ headers: req.headers });
 
       let compressionType = null;
-      // Зберігаємо інформацію про файл та функцію для його обробки
       let fileInfo = null;
+      let invalidField = false;
 
-      // 1. Обробник 'file': ПРИЗУПИНЯЄМО потік і ЗБЕРІГАЄМО логіку
-      bb.on('file', (fieldname, fileStream, filename) => {
-        // Запобігаємо обробці більше одного файлу
+      // FILE HANDLER
+      bb.on('file', (fieldname, fileStream, info) => {
+        // field must be named exactly "file"
+        if (fieldname !== 'file') {
+          invalidField = true;
+          fileStream.resume();
+
+          return;
+        }
+
         if (fileInfo) {
           fileStream.resume();
 
           return;
         }
 
-        // ПРИЗУПИНЯЄМО потік негайно, щоб не втратити дані
+        const filename = info.filename;
+
         fileStream.pause();
 
-        // Функція, яка запустить компресію після отримання compressionType
         const processor = () => {
+          if (!EXT_MAP[compressionType]) {
+            res.statusCode = 400;
+
+            return res.end('Unknown compression type');
+          }
+
           let compressor;
 
           if (compressionType === 'gzip') {
@@ -41,93 +64,91 @@ function createServer() {
             compressor = zlib.createDeflate();
           } else if (compressionType === 'br') {
             compressor = zlib.createBrotliCompress();
-          } else {
-            res.statusCode = 400;
-
-            return res.end('Unknown compression type');
           }
 
-          // ВИПРАВЛЕННЯ: Використовуємо повне ім'я, як вимагають тести.
-          const fileExt = compressionType;
+          const fileExt = EXT_MAP[compressionType];
 
           res.setHeader(
             'Content-Disposition',
             `attachment; filename=${filename}.${fileExt}`,
           );
 
-          // ВІДНОВЛЮЄМО потік і підключаємо його
           fileStream.pipe(compressor).pipe(res);
         };
 
-        // Зберігаємо всі дані разом
         fileInfo = { fileStream, filename, processor };
 
-        // Якщо compressionType вже був встановлений
         if (compressionType !== null) {
-          fileInfo.processor();
+          processor();
         }
       });
 
-      // 2. Обробник 'field': Отримуємо тип стиснення та ЗАПУСКАЄМО обробку
+      // FIELDS
       bb.on('field', (name, val) => {
         if (name === 'compressionType') {
           compressionType = val;
 
-          // Якщо файл вже був отриманий та призупинений
           if (fileInfo) {
             fileInfo.processor();
           }
         }
       });
 
-      // 3. Обробник 'finish': Перевірка на таймаут/зависання
+      // FINISH HANDLER
       bb.on('finish', () => {
-        // Якщо не було файлу
+        if (invalidField) {
+          res.statusCode = 400;
+
+          return res.end('Invalid file field name');
+        }
+
         if (!fileInfo) {
           res.statusCode = 400;
 
-          return res.end('No file or compression type received');
+          return res.end('No file or compressionType received');
         }
 
-        if (compressionType === null) {
-          // Споживаємо потік, щоб не зависнути, і завершуємо з помилкою.
+        if (!compressionType) {
+          return res.writeHead(400).end();
+        }
+
+        if (!compressionType) {
           fileInfo.fileStream.resume();
           res.statusCode = 400;
 
           return res.end('Missing compressionType field');
         }
-
-        // Успішна обробка (потік завершиться через pipe)
       });
 
-      // Обробка помилок Busboy
       bb.on('error', (err) => {
         res.statusCode = 500;
-        // ВИПРАВЛЕННЯ: Коректне завершення відповіді повідомленням про помилку
         res.end(`Busboy error: ${err.message}`);
       });
 
-      // Запуск парсингу
       req.pipe(bb);
 
       return;
     }
 
-    // --- Логіка для GET-запитів ---
+    // ---------------------------------------------
+    // GET /compress — invalid
+    // ---------------------------------------------
     if (req.method === 'GET' && url.pathname === '/compress') {
       res.statusCode = 400;
 
       return res.end('Use POST');
     }
 
+    // ---------------------------------------------
+    // STATIC FILES
+    // ---------------------------------------------
     const fileName = url.pathname.slice(1) || 'index.html';
     const filePath = path.resolve('public', fileName);
 
     if (!fs.existsSync(filePath)) {
       res.statusCode = 404;
-      res.end('file dont found');
 
-      return;
+      return res.end('file dont found');
     }
 
     const ext = path.extname(filePath);
@@ -149,8 +170,6 @@ function createServer() {
 
   return server;
 }
-
-createServer().listen(3006);
 
 module.exports = {
   createServer,
