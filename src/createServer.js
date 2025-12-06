@@ -19,110 +19,106 @@ function createServer() {
   server.on('request', (req, res) => {
     const url = new URL(req.url, `http://${req.headers.host}`);
 
-    // ---------------------------------------------
-    // POST /compress
-    // ---------------------------------------------
     if (req.method === 'POST' && url.pathname === '/compress') {
       const bb = busboy({ headers: req.headers });
 
       let compressionType = null;
       let fileInfo = null;
-      let invalidField = false;
 
-      // FILE HANDLER
-      bb.on('file', (fieldname, fileStream, info) => {
-        // field must be named exactly "file"
-        if (fieldname !== 'file') {
-          invalidField = true;
-          fileStream.resume();
-
-          return;
-        }
-
-        if (fileInfo) {
-          fileStream.resume();
-
-          return;
-        }
-
-        const filename = info.filename;
-
-        fileStream.pause();
-
-        const processor = () => {
-          if (!EXT_MAP[compressionType]) {
-            res.statusCode = 400;
-
-            return res.end('Unknown compression type');
-          }
-
-          let compressor;
-
-          if (compressionType === 'gzip') {
-            compressor = zlib.createGzip();
-          } else if (compressionType === 'deflate') {
-            compressor = zlib.createDeflate();
-          } else if (compressionType === 'br') {
-            compressor = zlib.createBrotliCompress();
-          }
-
-          const fileExt = EXT_MAP[compressionType];
-
-          res.setHeader(
-            'Content-Disposition',
-            `attachment; filename=${filename}.${fileExt}`,
-          );
-
-          fileStream.pipe(compressor).pipe(res);
-        };
-
-        fileInfo = { fileStream, filename, processor };
-
-        if (compressionType !== null) {
-          processor();
-        }
-      });
-
-      // FIELDS
       bb.on('field', (name, val) => {
         if (name === 'compressionType') {
           compressionType = val;
 
-          if (fileInfo) {
-            fileInfo.processor();
+          if (fileInfo && !fileInfo.started) {
+            fileInfo.start();
           }
         }
       });
 
-      // FINISH HANDLER
-      bb.on('finish', () => {
-        if (invalidField) {
-          res.statusCode = 400;
+      bb.on('file', (name, file, info) => {
+        file.pause();
 
-          return res.end('Invalid file field name');
-        }
+        fileInfo = {
+          file,
+          info,
+          started: false,
+          start() {
+            if (this.started) {
+              return;
+            }
+            this.started = true;
 
-        if (!fileInfo) {
-          res.statusCode = 400;
+            if (!compressionType) {
+              return;
+            } // дочекаємося пізніше
 
-          return res.end('No file or compressionType received');
-        }
+            if (!EXT_MAP[compressionType]) {
+              res.statusCode = 400;
 
-        if (!compressionType) {
-          return res.writeHead(400).end();
-        }
+              return res.end('Invalid compressionType');
+            }
 
-        if (!compressionType) {
-          fileInfo.fileStream.resume();
-          res.statusCode = 400;
+            const outName = `${info.filename}.${EXT_MAP[compressionType]}`;
 
-          return res.end('Missing compressionType field');
+            const compressor =
+              compressionType === 'gzip'
+                ? zlib.createGzip()
+                : compressionType === 'deflate'
+                  ? zlib.createDeflate()
+                  : zlib.createBrotliCompress();
+
+            res.statusCode = 200;
+
+            res.setHeader(
+              'Content-Disposition',
+              `attachment; filename=${outName}`,
+            );
+
+            file.on('error', () => {
+              if (!res.headersSent) {
+                res.statusCode = 500;
+              }
+              res.end();
+            });
+
+            compressor.on('error', () => {
+              if (!res.headersSent) {
+                res.statusCode = 500;
+              }
+              res.end();
+            });
+
+            file.resume();
+            file.pipe(compressor).pipe(res);
+          },
+        };
+
+        if (compressionType) {
+          fileInfo.start();
         }
       });
 
-      bb.on('error', (err) => {
-        res.statusCode = 500;
-        res.end(`Busboy error: ${err.message}`);
+      bb.on('finish', () => {
+        if (!fileInfo) {
+          res.statusCode = 400;
+
+          return res.end('No file');
+        }
+
+        if (!compressionType) {
+          // прибираємо пайпи, якщо були
+          fileInfo.file.unpipe();
+
+          // дочитуємо файл до кінця, інакше busboy зависне
+          fileInfo.file.resume();
+          res.statusCode = 400;
+
+          return res.end('Missing compressionType');
+        }
+
+        if (!fileInfo.started) {
+          fileInfo.start();
+        }
       });
 
       req.pipe(bb);
@@ -130,18 +126,13 @@ function createServer() {
       return;
     }
 
-    // ---------------------------------------------
-    // GET /compress — invalid
-    // ---------------------------------------------
     if (req.method === 'GET' && url.pathname === '/compress') {
       res.statusCode = 400;
+      res.end();
 
-      return res.end('Use POST');
+      return;
     }
 
-    // ---------------------------------------------
-    // STATIC FILES
-    // ---------------------------------------------
     const fileName = url.pathname.slice(1) || 'index.html';
     const filePath = path.resolve('public', fileName);
 
