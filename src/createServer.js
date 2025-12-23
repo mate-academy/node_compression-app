@@ -94,7 +94,7 @@ function createServer() {
         }
 
         const compressor = compressionTypes[compressionType]();
-        const extensions = { gzip: '.gz', deflate: '.dfl', br: '.br' };
+        const extensions = { gzip: '.gzip', deflate: '.deflate', br: '.br' };
         const compressedFileName = `${fileName}${extensions[compressionType]}`;
 
         res.statusCode = 200;
