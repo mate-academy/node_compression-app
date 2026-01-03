@@ -119,12 +119,19 @@ describe('createServer', () => {
 
               formData.append('compressionType', compressionType);
 
+              const ext =
+                compressionType === 'gzip'
+                  ? 'gz'
+                  : compressionType === 'deflate'
+                    ? 'dfl'
+                    : 'br';
+
               return axios
                 .post(`${HOST}/compress`, formData, {
                   headers: formData.getHeaders(),
                 })
                 .then((res) => {
-                  const expectedHeader = `attachment; filename=${filename}.${compressionType}`;
+                  const expectedHeader = `attachment; filename=${filename}.${ext}`;
 
                   expect(res.headers['content-disposition']).toBe(
                     expectedHeader,
