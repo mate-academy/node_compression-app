@@ -14,7 +14,7 @@ const ALLOWED_ENDPOINTS = {
   },
   Base: {
     route: '/',
-    alloweMethods: ['GET'],
+    allowedMethods: ['GET'],
   },
 };
 
@@ -43,7 +43,7 @@ function createServer() {
 
     if (
       pathname === ALLOWED_ENDPOINTS.Base.route &&
-      ALLOWED_ENDPOINTS.Base.alloweMethods.includes(req.method)
+      ALLOWED_ENDPOINTS.Base.allowedMethods.includes(req.method)
     ) {
       return processResponse({
         res,
@@ -123,7 +123,7 @@ function createServer() {
         }
       }
 
-      const fileNameCompressed = `${fileName}.${compressionAlg}`;
+      const fileNameCompressed = `${fileName}.${extension}`;
 
       res.statusCode = 200;
 
