@@ -1,249 +1,139 @@
+/* eslint-disable no-console */
+/* eslint-disable curly */
 'use strict';
 
-const http = require('http');
-const zlib = require('zlib');
-const { Readable } = require('stream');
-
-const compressors = {
-  gzip: zlib.createGzip,
-  deflate: zlib.createDeflate,
-  br: zlib.createBrotliCompress,
-};
-
-const extensions = {
-  gzip: '.gz',
-  deflate: '.dfl',
-  br: '.br',
-};
-
-function getBoundary(contentType = '') {
-  const match = contentType.match(/boundary=(?:"([^"]+)"|([^;]+))/i);
-
-  return match ? match[1] || match[2] : null;
-}
-
-async function readRequestBody(req) {
-  const chunks = [];
-
-  for await (const chunk of req) {
-    chunks.push(chunk);
-  }
-
-  return Buffer.concat(chunks);
-}
-
-function parsePartHeaders(headerText) {
-  const headers = {};
-
-  headerText.split('\r\n').forEach((line) => {
-    const idx = line.indexOf(':');
-
-    if (idx === -1) {
-      return;
-    }
-
-    const key = line.slice(0, idx).trim().toLowerCase();
-    const value = line.slice(idx + 1).trim();
-
-    headers[key] = value;
-  });
-
-  return headers;
-}
-
-function parseContentDisposition(value = '') {
-  // example:
-  // form-data; name="file"; filename="test.txt"
-  const nameMatch = value.match(/name="([^"]+)"/i);
-  const filenameMatch = value.match(/filename="([^"]*)"/i);
-
-  return {
-    name: nameMatch ? nameMatch[1] : null,
-    filename: filenameMatch ? filenameMatch[1] : null,
-  };
-}
-
-function trimCrlf(buf) {
-  if (buf.length >= 2 && buf.slice(-2).toString() === '\r\n') {
-    return buf.slice(0, -2);
-  }
-
-  return buf;
-}
-
-function parseMultipart(bodyBuffer, boundary) {
-  const boundaryToken = Buffer.from(`--${boundary}`);
-  const result = {
-    fields: {},
-    file: null,
-  };
-
-  let pos = 0;
-
-  // Must start with boundary
-  const first = bodyBuffer.indexOf(boundaryToken, pos);
-
-  if (first !== 0) {
-    return null;
-  }
-
-  pos = first;
-
-  while (pos < bodyBuffer.length) {
-    // Find next boundary
-    const boundaryStart = bodyBuffer.indexOf(boundaryToken, pos);
-
-    if (boundaryStart === -1) {
-      break;
-    }
-
-    let partStart = boundaryStart + boundaryToken.length;
-
-    // Check for final boundary: "--"
-    const isFinal =
-      bodyBuffer.slice(partStart, partStart + 2).toString() === '--';
-
-    if (isFinal) {
-      break;
-    }
-
-    // Skip leading CRLF after boundary
-    if (bodyBuffer.slice(partStart, partStart + 2).toString() === '\r\n') {
-      partStart += 2;
-    }
-
-    const headersEnd = bodyBuffer.indexOf(Buffer.from('\r\n\r\n'), partStart);
-
-    if (headersEnd === -1) {
-      return null;
-    }
-
-    const headerText = bodyBuffer.slice(partStart, headersEnd).toString('utf8');
-    const headers = parsePartHeaders(headerText);
-
-    const cd = parseContentDisposition(headers['content-disposition']);
-
-    if (!cd.name) {
-      return null;
-    }
-
-    const contentStart = headersEnd + 4;
-
-    // The content ends right before the next boundary
-    const nextBoundary = bodyBuffer.indexOf(boundaryToken, contentStart);
-
-    if (nextBoundary === -1) {
-      return null;
-    }
-
-    const rawContent = bodyBuffer.slice(contentStart, nextBoundary);
-    const content = trimCrlf(rawContent);
-
-    if (cd.filename !== null) {
-      // file part
-      result.file = {
-        fieldName: cd.name,
-        filename: cd.filename,
-        buffer: content,
-      };
-    } else {
-      // normal field
-      result.fields[cd.name] = content.toString('utf8').trim();
-    }
-
-    pos = nextBoundary;
-  }
-
-  return result;
-}
+const http = require('node:http');
+const fs = require('node:fs');
+const path = require('node:path');
+const pipeline = require('node:stream').pipeline;
+const zlib = require('node:zlib');
+const formidable = require('formidable');
+const mime = require('mime-types');
 
 function createServer() {
   return http.createServer(async (req, res) => {
-    // Serve HTML page (optional for tests, but useful and required by mentor)
-    if (req.method === 'GET' && req.url === '/') {
-      res.writeHead(200);
-      res.end();
+    if (req.url === '/' && req.method === 'GET') {
+      const filePath = path.join(__dirname, 'index.html');
 
-      return;
+      fs.readFile(filePath, (err, data) => {
+        if (err) {
+          res.writeHead(500, { 'Content-Type': 'text/plain' });
+          res.end('Internal Server Error');
+        } else {
+          res.writeHead(200, { 'Content-Type': 'text/html' });
+          res.end(data);
+        }
+      });
+    } else if (req.method !== 'POST' && req.url === '/compress') {
+      res.statusCode = 400;
+      res.end('Bad Request: Invalid request method.');
+    } else if (req.method === 'POST' && req.url === '/compress') {
+      const form = new formidable.IncomingForm();
+
+      form.parse(req, (err, fields, files) => {
+        if (err) {
+          res.statusCode = 500;
+          res.end('Server Error: Failed to parse form data.');
+
+          return;
+        }
+
+        const compressionTypeArray = fields.compressionType;
+        const compressionType = Array.isArray(compressionTypeArray)
+          ? compressionTypeArray[0]
+          : undefined;
+
+        const uploadedFileArray = files.file;
+        const uploadedFile = Array.isArray(uploadedFileArray)
+          ? uploadedFileArray[0]
+          : undefined;
+
+        if (!uploadedFile || !uploadedFile.filepath || !compressionType) {
+          res.statusCode = 400;
+          res.end('Bad Request: File or compression type missing or invalid.');
+
+          return;
+        }
+
+        let compressionStream;
+        let fileExtension;
+
+        switch (compressionType) {
+          case 'gzip':
+            compressionStream = zlib.createGzip();
+            fileExtension = '.gzip';
+            break;
+          case 'deflate':
+            compressionStream = zlib.createDeflate();
+            fileExtension = '.deflate';
+            break;
+          case 'br':
+            compressionStream = zlib.createBrotliCompress();
+            fileExtension = '.br';
+
+            break;
+          default:
+            res.statusCode = 400;
+            res.end('Bad Request: Unsupported compression type.');
+
+            fs.unlink(uploadedFile.filepath, (unlinkErr) => {
+              if (unlinkErr)
+                console.error('Error deleting temp file:', unlinkErr);
+            });
+
+            return;
+        }
+
+        const fileReadStream = fs.createReadStream(uploadedFile.filepath);
+
+        const originalFileName =
+          uploadedFile.originalFilename || 'uploaded_file';
+        const baseName = path.basename(
+          originalFileName,
+          path.extname(originalFileName),
+        );
+
+        const newFileName = `${baseName}${path.extname(originalFileName)}${fileExtension}`;
+        const originalMimeType =
+          uploadedFile.mimetype ||
+          mime.contentType(path.extname(originalFileName)) ||
+          'application/octet-stream';
+
+        res.statusCode = 200;
+        res.setHeader('Content-Type', originalMimeType);
+
+        res.setHeader(
+          'Content-Disposition',
+          `attachment; filename=${newFileName}`,
+        );
+
+        pipeline(fileReadStream, compressionStream, res, (pipelineErr) => {
+          if (pipelineErr) {
+            console.error('Pipeline failed during compression:', pipelineErr);
+
+            if (!res.headersSent) {
+              res.statusCode = 500;
+              res.end('Server Error during file compression.');
+            } else {
+              res.end();
+            }
+          }
+
+          fs.unlink(uploadedFile.filepath, (unlinkErr) => {
+            if (unlinkErr)
+              console.error('Error deleting temporary file:', unlinkErr);
+          });
+
+          res.on('close', () => {
+            fileReadStream.destroy();
+            compressionStream.destroy();
+          });
+        });
+      });
+    } else {
+      res.writeHead(404, { 'Content-Type': 'text/plain' });
+      res.end('Not Found');
     }
-
-    if (req.url !== '/compress') {
-      res.writeHead(404);
-      res.end();
-
-      return;
-    }
-
-    if (req.method !== 'POST') {
-      res.writeHead(400);
-      res.end();
-
-      return;
-    }
-
-    const contentType = req.headers['content-type'] || '';
-    const boundary = getBoundary(contentType);
-
-    if (!boundary) {
-      res.writeHead(400);
-      res.end();
-
-      return;
-    }
-
-    let body;
-
-    try {
-      body = await readRequestBody(req);
-    } catch (e) {
-      res.writeHead(400);
-      res.end();
-
-      return;
-    }
-
-    const parsed = parseMultipart(body, boundary);
-
-    if (!parsed) {
-      res.writeHead(400);
-      res.end();
-
-      return;
-    }
-
-    const compressionType = parsed.fields.compressionType;
-    const file = parsed.file;
-
-    // invalid form
-    if (
-      !compressionType ||
-      !file ||
-      file.fieldName !== 'file' ||
-      !file.filename
-    ) {
-      res.writeHead(400);
-      res.end();
-
-      return;
-    }
-
-    // unsupported type
-    if (!compressors[compressionType]) {
-      res.writeHead(400);
-      res.end();
-
-      return;
-    }
-
-    // stream compression
-    const compressor = compressors[compressionType]();
-    const outName = `${file.filename}${extensions[compressionType]}`;
-
-    res.writeHead(200, {
-      'Content-Disposition': `attachment; filename=${outName}`,
-    });
-
-    Readable.from(file.buffer).pipe(compressor).pipe(res);
   });
 }
 
