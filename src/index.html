@@ -6,11 +6,11 @@
   <title>Document</title>
 </head>
 <body>
-  <br action="/compress" method="POST" enctype="multipart/form-data">
+  <form action="/compress" method="POST" enctype="multipart/form-data">
     <label for="file">Select file: </label>
-    <input type="file" id="file" name="file" require>
+    <input type="file" id="file" name="file" required>
 
-    <label for="compressionType">Choose comresion type: </label>
+    <label for="compressionType">Comresion</label>
     <select name="compressionType" id="compressionType" required>
       <option value="gzip">Gzip</option>
       <option value="deflate">Deflate</option>

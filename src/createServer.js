@@ -44,9 +44,7 @@ function createServer() {
       const contentType = headers['content-type'];
 
       if (!contentType || !contentType.includes('multipart/form-data')) {
-        res.statusCode = 400;
-
-        return;
+        return sendStatus(res, 400);
       }
 
       const boundary = '--' + contentType.split('boundary=')[1];
@@ -117,7 +115,6 @@ function createServer() {
         });
 
         pipeline(Readable.from(fileBuffer), compressor, res, () => {});
-
       });
 
       return;
