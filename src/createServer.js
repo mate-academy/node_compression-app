@@ -96,12 +96,12 @@ function createServer() {
 
         if (compressionType === 'gzip') {
           compressor = zlib.createGzip();
-          extension = '.gzip';
+          extension = '.gz';
         }
 
         if (compressionType === 'deflate') {
           compressor = zlib.createDeflate();
-          extension = '.deflate';
+          extension = '.dfl';
         }
 
         if (compressionType === 'br') {
