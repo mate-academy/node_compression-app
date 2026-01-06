@@ -19,4 +19,5 @@ To pass the task you also need to implement a server that:
 - respond with 400 status code if trying to compress a file with an unsupported compression type
 - respond with 200 status code and compressed file if the form is valid
 
+
 **Read [the guideline](https://github.com/mate-academy/js_task-guideline/blob/master/README.md) before start**
