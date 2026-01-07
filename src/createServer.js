@@ -44,9 +44,16 @@ function createCompressionStream(type) {
 }
 
 function serveStaticFile(res, filepath, contentType) {
+  const fileStream = fs.createReadStream(path.join(__dirname, filepath));
+
   res.statusCode = 200;
   res.setHeader('Content-Type', contentType);
-  res.end(fs.readFileSync(path.join(__dirname, filepath)));
+
+  pipeline(fileStream, res, (err) => {
+    if (err && !res.headersSent) {
+      sendError(res, 500, 'Internal Server Error');
+    }
+  });
 }
 
 function sendError(res, statusCode, message) {
