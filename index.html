@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Compressor de Arquivos</title>
+</head>
+<body>
+    <h1>Upload para Compressão</h1>
+    <form action="/compress" method="POST" enctype="multipart/form-data">
+        <div>
+            <label for="file">Selecione o arquivo:</label>
+            <input type="file" id="file" name="file" required>
+        </div>
+        <br>
+        <div>
+            <label for="compressionType">Tipo de compressão:</label>
+            <select id="compressionType" name="compressionType" required>
+                <option value="gzip">gzip (.gz)</option>
+                <option value="deflate">deflate (.dfl)</option>
+                <option value="br">brotli (.br)</option>
+            </select>
+        </div>
+        <br>
+        <button type="submit">Enviar e Comprimir</button>
+    </form>
+</body>
+</html>
