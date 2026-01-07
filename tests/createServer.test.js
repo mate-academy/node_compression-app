@@ -27,10 +27,10 @@ function stringToStream(str) {
 }
 
 const compressionTypes = {
-  gzip: {
+  gz: {
     decompress: util.promisify(zlib.gunzip),
   },
-  deflate: {
+  dfl: {
     decompress: util.promisify(zlib.inflate),
   },
   br: {

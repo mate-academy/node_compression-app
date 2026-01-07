@@ -7,7 +7,7 @@ const { pipeline } = require('node:stream');
 const zlib = require('node:zlib');
 const { IncomingForm } = require('formidable');
 
-const SUPPORTED_COMPRESSION_TYPES = ['gzip', 'deflate', 'br'];
+const SUPPORTED_COMPRESSION_TYPES = ['gz', 'dfl', 'br'];
 const CONTENT_TYPES = {
   html: 'text/html',
   css: 'text/css',
@@ -35,8 +35,8 @@ function encodeFilename(filename) {
 
 function createCompressionStream(type) {
   const streams = {
-    gzip: () => zlib.createGzip(),
-    deflate: () => zlib.createDeflate(),
+    gz: () => zlib.createGzip(),
+    dfl: () => zlib.createDeflate(),
     br: () => zlib.createBrotliCompress(),
   };
 
