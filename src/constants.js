@@ -48,10 +48,10 @@ const index = `
         <button type="submit">Compress</button>
     </form>
 
-
     <script>
       function updateAction(type) {
-          document.querySelector('form').action = '${endpoints.compress}?compressionType=' + type;
+        document.querySelector('form').action =
+        '${endpoints.compress}?${htmlNames.comp}=' + type;
       }
     </script>
 </body>
