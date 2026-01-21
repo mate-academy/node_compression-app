@@ -6,14 +6,20 @@ const endpoints = {
 };
 
 const compMethods = {
-  gzip: 'gzip',
-  deflate: 'deflate',
+  gzip: 'gz',
+  deflate: 'dfl',
   brotli: 'br',
 };
 
 const htmlNames = {
   comp: 'compressionType',
   file: 'file',
+};
+
+const selectNames = {
+  [compMethods.gzip]: 'gzip',
+  [compMethods.deflate]: 'deflate',
+  [compMethods.brotli]: 'br',
 };
 
 const index = `
@@ -35,9 +41,9 @@ const index = `
     <label>
       Compression: 
       <select name="${htmlNames.comp}" required onChange="updateAction(this.value)">
-        <option value="${compMethods.gzip}" selected>${compMethods.gzip}</option>
-        <option value="${compMethods.deflate}">${compMethods.deflate}</option>
-        <option value="${compMethods.brotli}">${compMethods.brotli}</option>
+        <option value="${compMethods.gzip}" selected>${selectNames[compMethods.gzip]}</option>
+        <option value="${compMethods.deflate}">${selectNames[compMethods.deflate]}</option>
+        <option value="${compMethods.brotli}">${selectNames[compMethods.brotli]}</option>
       </select> 
     </label>
 
