@@ -26,6 +26,12 @@ const index = `
 </head>
 <body>
 
+    <form 
+      action="${endpoints.compress}?${htmlNames.comp}=${compMethods.gzip}" 
+      method="post"
+      enctype="multipart/form-data"
+    > 
+
     <label>
       Compression: 
       <select name="${htmlNames.comp}" required onChange="updateAction(this.value)">
@@ -35,11 +41,6 @@ const index = `
       </select> 
     </label>
 
-    <form 
-      action="${endpoints.compress}?${htmlNames.comp}=${compMethods.gzip}" 
-      method="post"
-      enctype="multipart/form-data"
-    > 
         <label>
             File: 
             <input type="file" name="${htmlNames.file}" required>
