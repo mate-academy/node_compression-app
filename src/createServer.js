@@ -1,113 +1,89 @@
 'use strict';
-import http from 'http';
-import fs from 'fs';
 
-const endpoints = {
-  home: '/',
-  compress: '/compress',
-};
+const http = require('http');
+const zlib = require('zlib');
+const { validate } = require('./validate');
+const { endpoints, index, compMethods } = require('./constants');
+const Busboy = require('busboy');
 
-const compMethods = {
-  gzip: 'gzip',
-  deflate: 'deflate',
-  brotli: 'br',
-};
+function handleCompress(req, res, comp) {
+  const bb = Busboy({ headers: req.headers });
 
-const index = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Compression app</title>
-</head>
-<body>
-    <form action="${endpoints.compress}" method="post" enctype="multipart/form-data">
-        <label>
-            File: 
-            <input type="file" name="file" required>
-        </label>
-        
-        <label>
-            Compression: 
-            <select name="compressionType" value="" required>
-                <option value="${compMethods.gzip}">${compMethods.gzip}</option>
-                <option value="${compMethods.deflate}">${compMethods.deflate}</option>
-                <option value="${compMethods.brotli}">${compMethods.brotli}</option>
-            </select> 
-        </label>
-        
-        <button type="submit">Compress</button>
-    </form>
-</body>
-</html>
-`;
+  const compressors = {
+    [compMethods.gzip]: zlib.createGzip,
+    [compMethods.deflate]: zlib.createDeflate,
+    [compMethods.brotli]: zlib.createBrotliCompress,
+  };
 
-const processor = {
-  [endpoints.home]: (res) => {
+  const compressor = compressors[comp]?.();
+
+  if (!compressor) {
+    res.statusCode = 400;
+
+    return res.end('Unsupported compression method');
+  }
+
+  let fileHandled = false;
+
+  const err = () => {
+    res.statusCode = 500;
+    res.end('Server Error');
+  };
+
+  bb.on('file', (name, file, { filename }) => {
+    fileHandled = true;
+
+    const finName = `${filename}.${comp}`;
+
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'application/octet-stream');
+
+    res.setHeader('Content-Disposition', `attachment; filename="${finName}"`);
+
+    file
+      .on('error', err)
+      .pipe(compressor)
+      .on('error', err)
+      .pipe(res)
+      .on('error', err);
+  });
+
+  bb.on('finish', () => {
+    if (!fileHandled) {
+      res.statusCode = 400;
+      res.end('No file provided');
+    }
+  });
+
+  bb.on('close', () => bb.destroy());
+
+  req.pipe(bb);
+}
+
+const createProcessor = (req, res, params = null) => ({
+  [endpoints.home]: () => {
+    res.statusCode = 200;
     res.setHeader('Content-Type', 'text/html');
     res.end(index);
   },
-  [endpoints.compress]: (req, res) => {
-    const fileStream = fs.createReadStream(req);
-
-    fileStream.on('data', (chunk) => {
-      res.write(chunk);
-    });
-  },
-};
+  [endpoints.compress]: () => handleCompress(req, res, params),
+});
 
 function createServer() {
   return http.createServer((req, res) => {
-    const validated = validate(req);
+    const val = validate(req);
 
-    if (!validated.ok) {
-      res.statusCode = validated.statusCode;
-      res.end(validated.message);
+    if (!val.ok) {
+      res.statusCode = val.statusCode;
+      res.end(val.message);
+
+      return;
     }
 
-    processor[validated.pathname](req);
+    createProcessor(req, res, val.compression)[val.pathname]();
   });
 }
 
 module.exports = {
   createServer,
-};
-
-const getValidationError = (statusCode, message) => {
-  return {
-    ok: false,
-    statusCode: statusCode,
-    message: message,
-  };
-};
-
-const validate = (req) => {
-  const url = new URL(req.url, `http://${req.headers.host}`);
-
-  if (!Object.values(endpoints).includes(url.pathname)) {
-    return getValidationError(404, `Endpoint doesn't exist: ${url.pathname}`);
-  }
-
-  if (url.pathname === endpoints.compress) {
-    if (req.method !== 'POST') {
-      return getValidationError(
-        400,
-        `Bad request: unsupported method ${req.method}`,
-      );
-    }
-
-    if (!req.file || !req.compressionType) {
-      return getValidationError(400, `Invalid form`);
-    }
-
-    if (!Object.keys(compMethods).includes(req.compressionType)) {
-      return getValidationError(400, `Unsupported compression method`);
-    }
-  }
-
-  return {
-    ok: true,
-    pathname: url.pathname,
-  };
 };
