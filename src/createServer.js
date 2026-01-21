@@ -33,7 +33,13 @@ function handleCompress(req, res, comp) {
   bb.on('file', (name, file, { filename }) => {
     fileHandled = true;
 
-    const finName = `${filename}.${comp}`;
+    const ext = {
+      [compMethods.gzip]: 'gz',
+      [compMethods.deflate]: 'dfl',
+      [compMethods.brotli]: 'br',
+    };
+
+    const finName = `${filename}.${ext[comp]}`;
 
     res.statusCode = 200;
     res.setHeader('Content-Type', 'application/octet-stream');
