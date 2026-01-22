@@ -17,6 +17,12 @@ axios.defaults.httpAgent = new Agent({ keepAlive: false });
 const PORT = 5701;
 const HOST = `http://localhost:${PORT}`;
 
+const compressionExtensions = {
+  gzip: 'gz',
+  deflate: 'dfl',
+  br: 'br',
+};
+
 function stringToStream(str) {
   const stream = new Readable();
 
@@ -124,7 +130,7 @@ describe('createServer', () => {
                   headers: formData.getHeaders(),
                 })
                 .then((res) => {
-                  const expectedHeader = `attachment; filename=${filename}.${compressionType}`;
+                  const expectedHeader = `attachment; filename=${filename}.${compressionExtensions[compressionType]}`;
 
                   expect(res.headers['content-disposition']).toBe(
                     expectedHeader,
