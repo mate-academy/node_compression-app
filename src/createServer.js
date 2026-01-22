@@ -19,6 +19,12 @@ const HTMLForm =
   '  <button type="submit">Compress</button>\n' +
   '</form>';
 
+const COMPRESSION_VOCABULARY = {
+  gzip: 'gz',
+  deflate: 'dfl',
+  br: 'br',
+};
+
 function createServer() {
   const server = new http.Server();
 
@@ -73,7 +79,7 @@ function createServer() {
           return;
         }
 
-        if (!['gzip', 'deflate', 'br'].includes(compressionType)) {
+        if (!Object.keys(COMPRESSION_VOCABULARY).includes(compressionType)) {
           res.statusCode = 400;
           res.end('Unsupported compression type');
 
@@ -96,7 +102,7 @@ function createServer() {
 
           res.setHeader(
             'Content-Disposition',
-            `attachment; filename=${fileInfo.filename}.${compressionType}`,
+            `attachment; filename=${fileInfo.filename}.${COMPRESSION_VOCABULARY[compressionType]}`,
           );
 
           fs.createReadStream(
