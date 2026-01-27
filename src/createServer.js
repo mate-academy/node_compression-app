@@ -49,6 +49,7 @@ function parseContentDisposition(value = '') {
     if (v.startsWith('"') && v.endsWith('"')) {
       v = v.slice(1, -1);
     }
+
     out[k] = v;
   }
 
@@ -226,14 +227,15 @@ function createServer() {
     for (const part of parts) {
       const cd = part.headers['content-disposition'] || '';
       const cdParsed = parseContentDisposition(cd);
-      const fieldName = cdParsed.name;
 
-      if (fieldName === 'file') {
+      if (cdParsed.name === 'file') {
         if (cdParsed.filename) {
           filename = cdParsed.filename;
         }
         fileBuffer = part.body;
-      } else if (fieldName === 'compressionType') {
+      }
+
+      if (cdParsed.name === 'compressionType') {
         compressionType = part.body.toString('utf8').trim();
       }
     }
