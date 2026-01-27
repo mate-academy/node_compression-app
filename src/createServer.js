@@ -233,9 +233,7 @@ function createServer() {
           filename = cdParsed.filename;
         }
         fileBuffer = part.body;
-      }
-
-      if (cdParsed.name === 'compressionType') {
+      } else if (cdParsed.name === 'compressionType') {
         compressionType = part.body.toString('utf8').trim();
       }
     }
