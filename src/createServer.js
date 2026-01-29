@@ -1,8 +1,9 @@
+/* eslint-disable no-console */
 'use strict';
 
 const http = require('http');
 const zlib = require('zlib');
-const { pipeline } = require('stream');
+const { pipeline, Readable } = require('stream');
 
 function createServer() {
   return http.createServer((req, res) => {
@@ -36,39 +37,71 @@ function createServer() {
       return res.end('Only POST requests are allowed');
     }
 
-    const urlParams = new URL(url, `http://${req.headers.host}`);
-    const compressionType =
-      urlParams.searchParams.get('compressionType') ||
-      req.headers['x-compression-type'] ||
-      'gzip';
+    let bodyBuffer = Buffer.alloc(0);
+    let isStreamingStarted = false;
 
-    const validTypes = {
-      gzip: { create: zlib.createGzip, ext: 'gz' },
-      deflate: { create: zlib.createDeflate, ext: 'dfl' },
-      br: { create: zlib.createBrotliCompress, ext: 'br' },
-    };
+    req.on('data', (chunk) => {
+      if (isStreamingStarted) {
+        return;
+      }
 
-    const config = validTypes[compressionType];
+      bodyBuffer = Buffer.concat([bodyBuffer, chunk]);
 
-    if (!config) {
-      res.statusCode = 400;
+      const bodyStr = bodyBuffer.toString('binary');
+      const filePartHeaderMatch = bodyStr.match(
+        /filename="(.+?)"\r\nContent-Type: .+?\r\n\r\n/,
+      );
+      const typeMatch = bodyStr.match(
+        /name="compressionType"\r\n\r\n(.+?)\r\n/,
+      );
 
-      return res.end('Unsupported compression type');
-    }
+      if (filePartHeaderMatch && typeMatch) {
+        isStreamingStarted = true;
 
-    res.writeHead(200, {
-      'Content-Type': 'application/octet-stream',
-      'Content-Disposition': `attachment; filename="file.${config.ext}"`,
-    });
+        const filename = filePartHeaderMatch[1];
+        const compressionType = typeMatch[1].trim();
 
-    pipeline(req, config.create(), res, (err) => {
-      if (err) {
-        if (!res.headersSent) {
+        const validTypes = {
+          gzip: { create: zlib.createGzip, ext: 'gz' },
+          deflate: { create: zlib.createDeflate, ext: 'dfl' },
+          br: { create: zlib.createBrotliCompress, ext: 'br' },
+        };
+
+        const config = validTypes[compressionType];
+
+        if (!config) {
           res.statusCode = 400;
-          res.end('Compression failed');
-        } else {
-          res.end();
+
+          return res.end('Unsupported compression type');
         }
+
+        // Prepare response
+        res.writeHead(200, {
+          'Content-Type': 'application/octet-stream',
+          'Content-Disposition': `attachment; filename="${filename}.${compressionType}"`,
+        });
+
+        const headerEndIndex =
+          bodyStr.indexOf(filePartHeaderMatch[0]) +
+          filePartHeaderMatch[0].length;
+        const initialFileData = bodyBuffer.slice(headerEndIndex);
+
+        const boundary = bodyStr.split('\r\n')[0];
+        const footerIndex = initialFileData
+          .toString('binary')
+          .indexOf(boundary);
+
+        const actualFileSource = Readable.from(
+          footerIndex !== -1
+            ? initialFileData.slice(0, footerIndex - 2)
+            : initialFileData,
+        );
+
+        pipeline(actualFileSource, config.create(), res, (err) => {
+          if (err) {
+            console.error(err);
+          }
+        });
       }
     });
   });
