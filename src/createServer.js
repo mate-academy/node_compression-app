@@ -39,8 +39,8 @@ function handleCompress(req, res) {
     }
 
     const compressors = {
-      gzip: { ext: '.gzip', stream: zlib.createGzip },
-      deflate: { ext: '.deflate', stream: zlib.createDeflate },
+      gzip: { ext: '.gz', stream: zlib.createGzip },
+      deflate: { ext: '.dfl', stream: zlib.createDeflate },
       br: { ext: '.br', stream: zlib.createBrotliCompress },
     };
 
@@ -55,7 +55,7 @@ function handleCompress(req, res) {
 
     res.writeHead(200, {
       'Content-Type': 'application/octet-stream',
-      'Content-Disposition': `attachment; filename=${file.originalFilename}${config.ext}`,
+      'Content-Disposition': `attachment; filename=${file.originalFilename}.${compressionType}`,
     });
 
     pipeline(
