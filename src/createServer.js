@@ -82,23 +82,27 @@ function createServer() {
         }
 
         const originalFilename = fileObject.originalFilename || 'file';
+        let extension = '';
         let compressor;
 
         switch (compressionType) {
           case 'gzip':
+            extension = '.gz';
             compressor = zlib.createGzip();
             break;
           case 'deflate':
+            extension = '.dfl';
             compressor = zlib.createDeflate();
             break;
           case 'br':
+            extension = '.br';
             compressor = zlib.createBrotliCompress();
             break;
         }
 
         response.setHeader(
           'Content-Disposition',
-          `attachment; filename=${originalFilename}.${compressionType}`,
+          `attachment; filename=${originalFilename}${extension}`,
         );
         response.statusCode = 200;
 
