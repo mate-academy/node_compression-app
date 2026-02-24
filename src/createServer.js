@@ -1,115 +1,113 @@
 'use strict';
 
-/* eslint-disable no-console */
-
 const http = require('http');
-const { readFile } = require('fs');
-const path = require('path');
 const zlib = require('zlib');
 
-const compressTypes = {
-  gzip: {
-    stream: zlib.createGzip,
-    extention: '.gz',
-  },
-  deflate: {
-    stream: zlib.createDeflate,
-    extention: '.dfl',
-  },
-  br: {
-    stream: zlib.createBrotliCompress,
-    extention: '.br',
-  },
-};
-
 function createServer() {
-  const server = http.createServer((req, res) => {
-    if (req.url === '/') {
-      res.setHeader('Content-Type', 'text/html');
+  return http.createServer((req, res) => {
+    if (req.method === 'GET' && req.url === '/') {
+      res.statusCode = 200;
+      res.end('OK');
 
-      readFile(path.resolve(__dirname, 'index.html'), 'utf8', (err, data) => {
-        if (err) {
-          console.error(err);
+      return;
+    }
 
-          return;
+    if (req.url !== '/compress') {
+      res.statusCode = 404;
+      res.end();
+
+      return;
+    }
+
+    if (req.method !== 'POST') {
+      res.statusCode = 400;
+      res.end();
+
+      return;
+    }
+
+    const contentType = req.headers['content-type'] || '';
+
+    if (!contentType.includes('multipart/form-data')) {
+      res.statusCode = 400;
+      res.end();
+
+      return;
+    }
+
+    const boundary = '--' + contentType.split('boundary=')[1];
+
+    const chunks = [];
+
+    req.on('data', (chunk) => chunks.push(chunk));
+
+    req.on('end', () => {
+      const body = Buffer.concat(chunks).toString('binary');
+
+      const parts = body.split(boundary).filter((p) => p.trim());
+
+      let fileBuffer = null;
+      let filename = null;
+      let compressionType = null;
+
+      for (const part of parts) {
+        if (part.includes('name="file"')) {
+          const headerEnd = part.indexOf('\r\n\r\n');
+
+          const headers = part.slice(0, headerEnd);
+          const content = part.slice(headerEnd + 4, part.lastIndexOf('\r\n'));
+
+          const match = headers.match(/filename="(.+?)"/);
+
+          if (match) {
+            filename = match[1];
+          }
+
+          fileBuffer = Buffer.from(content, 'binary');
         }
 
-        return res.end(data);
-      });
-    } else if (req.url === '/compress') {
-      if (req.method === 'POST') {
-        let startedStream = false;
-        let fileName = '';
-        let compressToType = '';
-        let compressor;
+        if (part.includes('name="compressionType"')) {
+          const headerEnd = part.indexOf('\r\n\r\n');
 
-        req.on('data', (chunk) => {
-          if (!startedStream) {
-            const chunkStr = chunk.toString();
-            const startIdx = chunkStr.lastIndexOf('\r\n\r\n');
-            const headers = chunkStr.slice(0, startIdx);
+          const value = part
+            .slice(headerEnd + 4)
+            .replace(/\r\n$/, '')
+            .trim();
 
-            const compressionMatch = headers.match(
-              /name="compressionType"\r\n\r\n([^\r\n]+)/,
-            );
-            const fileNameMatch = headers.match(/filename="([^"]+)"/);
-
-            if (compressionMatch) {
-              compressToType = compressionMatch[1];
-            }
-
-            if (fileNameMatch) {
-              fileName = fileNameMatch[1];
-            }
-
-            if (
-              !compressToType ||
-              !compressTypes.hasOwnProperty(compressToType) ||
-              !fileName
-            ) {
-              res.statusCode = 400;
-              res.end('Provide file and valid compression type!');
-
-              return;
-            }
-
-            const fileChunk = chunk.slice(startIdx + 4);
-
-            startedStream = true;
-
-            res.writeHead(200, {
-              'Content-Type': 'application/octet-stream',
-              'Content-Disposition': `attachment; filename=${fileName}${compressTypes[compressToType].extention}`,
-            });
-
-            compressor = compressTypes[compressToType].stream();
-            compressor.pipe(res);
-            compressor.write(fileChunk);
-          } else {
-            compressor.write(chunk);
-          }
-        });
-
-        req.on('end', () => {
-          if (compressor) {
-            compressor.end();
-          }
-        });
-      } else {
-        res.statusCode = 400;
-
-        return res.end();
+          compressionType = value;
+        }
       }
-    } else {
-      res.statusCode = 404;
 
-      return res.end();
-    }
+      const compressors = {
+        gzip: zlib.gzipSync,
+        deflate: zlib.deflateSync,
+        br: zlib.brotliCompressSync,
+      };
+
+      if (!fileBuffer || !compressionType || !compressors[compressionType]) {
+        res.statusCode = 400;
+        res.end();
+
+        return;
+      }
+
+      const compressed = compressors[compressionType](fileBuffer);
+
+      res.statusCode = 200;
+
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename=${filename}.${compressionType}`,
+      );
+
+      res.end(compressed);
+    });
+
+    req.on('error', () => {
+      res.statusCode = 500;
+      res.end();
+    });
   });
-
-  return server;
 }
 
-module.exports = {
-  createServer,
-};
+module.exports = { createServer };
