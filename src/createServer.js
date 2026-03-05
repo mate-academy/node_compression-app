@@ -51,6 +51,7 @@ function createServer() {
           </body>
         </html>
       `);
+
       return;
     }
 
@@ -60,6 +61,7 @@ function createServer() {
       form.parse(req, (err, fields, files) => {
         if (err) {
           res.statusCode = 400;
+
           return res.end('Error parsing form');
         }
 
@@ -68,32 +70,48 @@ function createServer() {
 
         if (!file || !compressionType) {
           res.statusCode = 400;
+
           return res.end('Missing file or compression type');
         }
 
         // Escolhe compressor
         let compressor;
-        if (compressionType === 'gzip') compressor = zlib.createGzip();
-        else if (compressionType === 'deflate') compressor = zlib.createDeflate();
-        else if (compressionType === 'br') compressor = zlib.createBrotliCompress();
-        else {
+
+        if (compressionType === 'gzip') {
+          compressor = zlib.createGzip();
+        } else if (compressionType === 'deflate') {
+          compressor = zlib.createDeflate();
+        } else if (compressionType === 'br') {
+          compressor = zlib.createBrotliCompress();
+        } else {
           res.statusCode = 400;
+
           return res.end('Invalid compression type');
         }
 
         // Prepara nome do arquivo com extensão correta
-        const extension = compressionType === 'gzip' ? '.gz' :
-                          compressionType === 'deflate' ? '.dfl' : '.br';
+        const extension =
+          compressionType === 'gzip'
+            ? '.gz'
+            : compressionType === 'deflate'
+              ? '.dfl'
+              : '.br';
+
         const filename = path.basename(file.originalFilename) + extension;
 
         res.setHeader('Content-Type', 'application/octet-stream');
-        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+        res.setHeader(
+          'Content-Disposition',
+          `attachment; filename="${filename}"`,
+        );
 
         const readStream = fs.createReadStream(file.filepath);
 
-        pipeline(readStream, compressor, res, err => {
+        pipeline(readStream, compressor, res, (pipelineErr) => {
           if (err) {
-            console.error(err);
+            /* eslint-disable-next-line no-console */
+            console.error(pipelineErr);
             res.statusCode = 500;
             res.end('Compression error');
           }
