@@ -1,8 +1,82 @@
 'use strict';
 
-const zlib = require('zlib');
-const http = require('http');
-const { Readable } = require('node:stream');
+const zlib = require('node:zlib');
+const http = require('node:http');
+const { Transform } = require('node:stream');
+
+class MultipartStream extends Transform {
+  constructor(boundaryString) {
+    super();
+    this.buffer = Buffer.alloc(0);
+    this.isHeaderParsed = false;
+    this.boundaryEnd = Buffer.from(`\r\n--${boundaryString}`);
+  }
+
+  _transform(chunk, encoding, callback) {
+    this.buffer = Buffer.concat([this.buffer, chunk]);
+
+    if (!this.isHeaderParsed) {
+      const fileIdx = this.buffer.indexOf('filename="');
+
+      if (fileIdx !== -1) {
+        const headerEnd = this.buffer.indexOf('\r\n\r\n', fileIdx);
+
+        if (headerEnd !== -1) {
+          const startIdx = headerEnd + 4;
+          const str = this.buffer.toString('utf8');
+
+          const cMatch = str.match(
+            /name="compressionType"\r\n\r\n(gzip|deflate|br)/,
+          );
+          const fMatch = str.match(/filename="([^"]+)"/);
+
+          if (cMatch && fMatch) {
+            this.isHeaderParsed = true;
+
+            this.emit('fileReady', {
+              compressionType: cMatch[1],
+              filename: fMatch[1],
+            });
+            this.buffer = this.buffer.subarray(startIdx);
+          }
+        }
+      }
+
+      if (!this.isHeaderParsed && this.buffer.length > 1024 * 1024) {
+        this.emit('error', new Error('Invalid form data or headers too large'));
+
+        return callback();
+      }
+    }
+
+    // Шаг 2: Стримим чистый файл
+    if (this.isHeaderParsed) {
+      const endIdx = this.buffer.indexOf(this.boundaryEnd);
+
+      if (endIdx !== -1) {
+        this.push(this.buffer.subarray(0, endIdx));
+        this.buffer = Buffer.alloc(0);
+        this.push(null);
+      } else {
+        if (this.buffer.length > this.boundaryEnd.length) {
+          const safeLen = this.buffer.length - this.boundaryEnd.length;
+
+          this.push(this.buffer.subarray(0, safeLen));
+          this.buffer = this.buffer.subarray(safeLen);
+        }
+      }
+    }
+
+    callback();
+  }
+
+  _flush(callback) {
+    if (!this.isHeaderParsed) {
+      this.emit('error', new Error('Missing file or compression type'));
+    }
+    callback();
+  }
+}
 
 function createServer() {
   const server = http.createServer();
@@ -23,74 +97,41 @@ function createServer() {
       return res.end('Not Found');
     }
 
-    if (req.method === 'GET' || req.method !== 'POST') {
+    if (req.method !== 'POST') {
       res.statusCode = 400;
 
       return res.end('Bad Request');
     }
 
-    const chunks = [];
+    // Достаем уникальную границу (boundary) из заголовков запроса
+    const boundaryMatch = req.headers['content-type']?.match(/boundary=(.*)/);
 
-    req.on('data', (chunk) => chunks.push(chunk));
+    if (!boundaryMatch) {
+      res.statusCode = 400;
 
-    req.on('end', () => {
-      const buffer = Buffer.concat(chunks);
-      const bufferString = buffer.toString('utf8');
+      return res.end('Bad Request: Not a multipart form');
+    }
 
-      const compressionMatch = bufferString.match(
-        /name="compressionType"\r\n\r\n(gzip|deflate|br)/,
-      );
+    const boundaryStr = boundaryMatch[1].replace(/"/g, '');
 
-      if (!compressionMatch) {
-        res.statusCode = 400;
+    const formParser = new MultipartStream(boundaryStr);
 
-        return res.end('Bad Request: Invalid or unsupported compression type');
-      }
-
-      const compressionType = compressionMatch[1];
-
-      const filenameMatch = bufferString.match(/filename="([^"]+)"/);
-
-      if (!filenameMatch) {
-        res.statusCode = 400;
-
-        return res.end('Bad Request: No file found in form');
-      }
-
-      const originalFilename = filenameMatch[1];
-
-      const filenameIndex = buffer.indexOf('filename="');
-      const headerEndIndex = buffer.indexOf('\r\n\r\n', filenameIndex);
-
-      if (filenameIndex === -1 || headerEndIndex === -1) {
-        res.statusCode = 400;
-
-        return res.end('Bad Request: Invalid form data');
-      }
-
-      const startIndex = headerEndIndex + 4;
-      const endIndex = buffer.indexOf('\r\n------', startIndex);
-
-      if (endIndex === -1) {
-        res.statusCode = 400;
-
-        return res.end('Bad Request: Malformed form data boundaries');
-      }
-
-      const fileBuffer = buffer.subarray(startIndex, endIndex);
-      const fileStream = Readable.from(fileBuffer);
-
+    formParser.on('fileReady', ({ compressionType, filename }) => {
       let resFile = null;
+      let ext = '';
 
       switch (compressionType) {
         case 'gzip':
           resFile = zlib.createGzip();
+          ext = '.gz';
           break;
         case 'deflate':
           resFile = zlib.createDeflate();
+          ext = '.dfl';
           break;
         case 'br':
           resFile = zlib.createBrotliCompress();
+          ext = '.br';
           break;
       }
 
@@ -98,24 +139,35 @@ function createServer() {
 
       res.setHeader(
         'Content-Disposition',
-        `attachment; filename=${originalFilename}.${compressionType}`,
+        `attachment; filename=${filename}${ext}`,
       );
-
-      fileStream.on('error', () => {
-        if (!res.headersSent) {
-          res.statusCode = 500;
-        }
-        res.end('Server Error during read');
-      });
 
       resFile.on('error', () => {
         if (!res.headersSent) {
           res.statusCode = 500;
         }
-        res.end('Server Error during compression');
+        res.end('Compression Error');
       });
 
-      fileStream.pipe(resFile).pipe(res);
+      // Соединяем трубы: Парсер -> Архиватор -> Клиент
+      formParser.pipe(resFile).pipe(res);
+    });
+
+    formParser.on('error', (err) => {
+      if (!res.headersSent) {
+        res.statusCode = 400;
+        res.end(`Bad Request: ${err.message}`);
+      }
+    });
+
+    // Начинаем заливать данные из запроса в наш парсер
+    req.pipe(formParser);
+
+    req.on('error', () => {
+      if (!res.headersSent) {
+        res.statusCode = 500;
+        res.end('Request Error');
+      }
     });
   });
 
