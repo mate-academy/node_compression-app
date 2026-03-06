@@ -118,20 +118,16 @@ function createServer() {
 
     formParser.on('fileReady', ({ compressionType, filename }) => {
       let resFile = null;
-      let ext = '';
 
       switch (compressionType) {
         case 'gzip':
           resFile = zlib.createGzip();
-          ext = '.gz';
           break;
         case 'deflate':
           resFile = zlib.createDeflate();
-          ext = '.dfl';
           break;
         case 'br':
           resFile = zlib.createBrotliCompress();
-          ext = '.br';
           break;
       }
 
@@ -139,7 +135,7 @@ function createServer() {
 
       res.setHeader(
         'Content-Disposition',
-        `attachment; filename=${filename}${ext}`,
+        `attachment; filename=${filename}.${compressionType}`,
       );
 
       resFile.on('error', () => {
