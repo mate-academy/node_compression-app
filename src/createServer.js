@@ -95,7 +95,8 @@ function createServer() {
         }
 
         const fileName = file.originalFilename;
-        const compressedFileName = `${fileName}.${compressionType}`;
+        const extensionMap = { gzip: 'gz', deflate: 'dfl', br: 'br' };
+        const compressedFileName = `${fileName}.${extensionMap[compressionType]}`;
 
         let compressionStream;
 
