@@ -6,6 +6,20 @@ const path = require('path');
 const zlib = require('zlib');
 const { formidable } = require('formidable');
 
+// Map compression types to their file extensions
+const extensionMap = new Map([
+  ['gzip', '.gz'],
+  ['deflate', '.dfl'],
+  ['br', '.br'],
+]);
+
+// Map compression types to their zlib stream creators
+const compressionStreamMap = new Map([
+  ['gzip', () => zlib.createGzip()],
+  ['deflate', () => zlib.createDeflate()],
+  ['br', () => zlib.createBrotliCompress()],
+]);
+
 function createServer() {
   const server = http.createServer((req, res) => {
     // Handle root path - serve HTML file
@@ -85,33 +99,23 @@ function createServer() {
           return;
         }
 
-        const validTypes = ['gzip', 'deflate', 'br'];
-
-        if (!validTypes.includes(compressionType)) {
+        // Validate compression type using the Map
+        if (!extensionMap.has(compressionType)) {
           res.writeHead(400, { 'Content-Type': 'text/plain' });
           res.end('Bad Request: Unsupported compression type');
 
           return;
         }
 
+        // Get the correct file extension from the Map
         const fileName = file.originalFilename;
-        const compressedFileName = `${fileName}.${compressionType}`;
+        const extension = extensionMap.get(compressionType);
+        const compressedFileName = `${fileName}${extension}`;
 
-        let compressionStream;
-
-        switch (compressionType) {
-          case 'gzip':
-            compressionStream = zlib.createGzip();
-            break;
-
-          case 'deflate':
-            compressionStream = zlib.createDeflate();
-            break;
-
-          case 'br':
-            compressionStream = zlib.createBrotliCompress();
-            break;
-        }
+        // Get the compression stream creator from the Map
+        const createCompressionStream =
+          compressionStreamMap.get(compressionType);
+        const compressionStream = createCompressionStream();
 
         res.writeHead(200, {
           'Content-Type': 'application/octet-stream',
