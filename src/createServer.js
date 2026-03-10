@@ -4,6 +4,18 @@ const http = require('http');
 const { Readable, pipeline } = require('stream');
 const zlib = require('zlib');
 
+const compressionStreams = {
+  gzip: () => zlib.createGzip(),
+  deflate: () => zlib.createDeflate(),
+  br: () => zlib.createBrotliCompress(),
+};
+
+const compressionExtensions = {
+  gzip: 'gzip',
+  deflate: 'deflate',
+  br: 'br',
+};
+
 function collectRequestBody(req) {
   return new Promise((resolve, reject) => {
     const chunks = [];
@@ -112,16 +124,9 @@ function parseMultipartFormData(bodyBuffer, boundary) {
 }
 
 function createCompressionStream(compressionType) {
-  switch (compressionType) {
-    case 'gzip':
-      return zlib.createGzip();
-    case 'deflate':
-      return zlib.createDeflate();
-    case 'br':
-      return zlib.createBrotliCompress();
-    default:
-      return null;
-  }
+  const createStream = compressionStreams[compressionType];
+
+  return createStream ? createStream() : null;
 }
 
 function createServer() {
@@ -210,11 +215,12 @@ function createServer() {
         return;
       }
 
+      const extension = compressionExtensions[compressionType];
       const fileStream = Readable.from(file.buffer);
 
       res.writeHead(200, {
         'Content-Type': 'application/octet-stream',
-        'Content-Disposition': `attachment; filename=${file.filename}.${compressionType}`,
+        'Content-Disposition': `attachment; filename=${file.filename}.${extension}`,
       });
 
       pipeline(fileStream, compressionStream, res, (error) => {
