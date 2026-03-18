@@ -34,14 +34,29 @@ function createServer() {
           return res.end();
         }
 
+        const boundaryObj =
+          req.headers['content-type'] &&
+          req.headers['content-type'].match(/boundary=(.*)/);
+        const boundary = boundaryObj ? boundaryObj[1] : '';
+        const parts = body.split(`--${boundary}`);
+        let fileContent = '';
         let compressionType = null;
 
-        if (body.includes('gzip')) {
-          compressionType = 'gzip';
-        } else if (body.includes('deflate')) {
-          compressionType = 'deflate';
-        } else if (body.includes('br')) {
-          compressionType = 'br';
+        for (const part of parts) {
+          if (part.includes('name="file"')) {
+            const fileStart = part.indexOf('\r\n\r\n') + 4;
+
+            fileContent = part.substring(fileStart, part.lastIndexOf('\r\n'));
+          } else if (part.includes('name="compressionType"')) {
+            const valStart = part.indexOf('\r\n\r\n') + 4;
+            const parsedType = part
+              .substring(valStart, part.lastIndexOf('\r\n'))
+              .trim();
+
+            if (['gzip', 'deflate', 'br'].includes(parsedType)) {
+              compressionType = parsedType;
+            }
+          }
         }
 
         if (!compressionType) {
@@ -71,7 +86,13 @@ function createServer() {
           `attachment; filename=${filename}${ext}`,
         );
 
-        req.pipe(compressor).pipe(res);
+        const { Readable } = require('stream');
+        const fileStream = new Readable();
+
+        fileStream.push(fileContent);
+        fileStream.push(null);
+
+        fileStream.pipe(compressor).pipe(res);
       });
 
       return;
