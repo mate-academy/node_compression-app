@@ -44,8 +44,8 @@ const handleStaticFiles = (req, res) => {
       })
       .pipe(res);
   } else {
-    res.statusCode = 400;
-    res.end('Bad request: Page not found');
+    res.statusCode = 404;
+    res.end('Not found');
   }
 };
 
@@ -126,7 +126,7 @@ function createServer() {
     }
 
     res.writeHead(404, { 'Content-Type': 'text/plain' });
-    res.end('Bad request: Page not found');
+    res.end('Not found');
   });
 
   return server;
