@@ -75,7 +75,7 @@ const handleFileCompress = (req, res) => {
 
     if (!compressionMap.has(compression)) {
       res.writeHead(400, { 'Content-Type': 'text/plain' });
-      res.end('Bad request: Unsupported compression type');
+      res.end('Bad request:  Unsupported compression type');
 
       return;
     }
