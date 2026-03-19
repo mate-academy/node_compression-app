@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form</title>
+    <link rel="stylesheet" href="/style.css">
+  </head>
+  <body>
+    <h1 class="title">Compression App</h1>
+
+    <form class="app"
+      action="/compress"
+      method="POST"
+      enctype="multipart/form-data"
+    >
+      <div class="app__top">Form</div>
+      <div class="app__content">
+        <div class="file__section">
+          <span class="file__title">Select a file:</span>
+            <label class="file__wrapper">
+              <input
+                class="file__input"
+                type="file"
+                name="file"
+              />
+              <span class="file__status">File is not selected</span>
+              <span class="file__browse">Browse...</span>
+            </label>
+        </div>
+
+        <div class="type__section">
+          <span class="type__title">Choose a compression:</span>
+          <select
+            class="type__select"
+            name="compressionType"
+            id="select"
+          >
+            <option value=""></option>
+            <option value="gzip">Gzip (.gz)</option>
+            <option value="deflate">Deflate (.dfl)</option>
+            <option value="br">Brotli (.br)</option>
+          </select>
+        </div>
+
+        <button
+          class="submit__button"
+          type="submit"
+        >
+          Submit
+        </button>
+      </div>
+    </div>
+    <script src="./script.js"></script>
+  </body>
+</html>
