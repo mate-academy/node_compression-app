@@ -2,6 +2,7 @@
 
 const http = require('http');
 const zlib = require('node:zlib');
+const { Readable } = require('stream');
 
 function createServer() {
   /* Write your code here */
@@ -86,7 +87,6 @@ function createServer() {
           `attachment; filename=${filename}${ext}`,
         );
 
-        const { Readable } = require('stream');
         const fileStream = new Readable();
 
         fileStream.push(fileContent);
