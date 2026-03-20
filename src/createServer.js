@@ -5,7 +5,7 @@ const path = require('path');
 const http = require('http');
 const zlib = require('zlib');
 const busboy = require('busboy');
-const { PassThrough } = require('stream'); // 👈 ajout
+const { PassThrough } = require('stream');
 
 function createServer() {
   const server = new http.Server();
@@ -50,7 +50,7 @@ function createServer() {
 
     let filename = '';
     let compressionType = '';
-    let filesStream = null; // sera un PassThrough
+    let filesStream = null;
     let gotFile = false;
 
     const startCompression = () => {
