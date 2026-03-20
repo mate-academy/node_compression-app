@@ -1,17 +1,37 @@
 'use strict';
 
+const fs = require('fs');
+const path = require('path');
 const http = require('http');
 const zlib = require('zlib');
-const Busboy = require('busboy');
+const busboy = require('busboy');
 
 function createServer() {
   const server = new http.Server();
 
   server.on('request', (req, res) => {
-    if (req.url === '/' && req.method === 'GET') {
-      res.statusCode = 200;
+    if (req.url === '/favicon.ico') {
+      res.statusCode = 204;
 
-      return res.end('OK');
+      return res.end();
+    }
+
+    if (req.url === '/' && req.method === 'GET') {
+      const filePath = path.resolve(__dirname, 'index.html');
+      const stream = fs.createReadStream(filePath);
+
+      stream.on('error', (err) => {
+        /* eslint-disable no-console */
+        console.error('Error reading index.html:', err);
+
+        res.statusCode = 500;
+
+        return res.end('Cannot read index.html');
+      });
+
+      res.writeHead(200, { 'Content-Type': 'text/html' });
+
+      return stream.pipe(res);
     }
 
     if (req.url !== '/compress') {
@@ -26,11 +46,14 @@ function createServer() {
       return res.end('Only POST allowed!');
     }
 
-    let busboy;
+    let bb;
 
     try {
-      busboy = Busboy({ headers: req.headers });
+      // console.log('headers:', req.headers);
+
+      bb = busboy({ headers: req.headers });
     } catch (err) {
+      // console.error('Busboy init error:', err);
       res.statusCode = 400;
 
       return res.end('Invalid Content-Type');
@@ -41,17 +64,74 @@ function createServer() {
     let filesStream = null;
     let gotFile = false;
 
-    busboy.on('field', (name, val) => {
+    const startCompression = () => {
+      if (!gotFile || !compressionType || !filesStream || res.headersSent) {
+        return;
+      }
+
+      const extensions = {
+        gzip: 'gz',
+        deflate: 'dfl',
+        br: 'br',
+      };
+      const ext = extensions[compressionType];
+
+      if (!ext) {
+        res.statusCode = 400;
+
+        return res.end('Unsupported compression type');
+      }
+
+      let compressStream;
+
+      if (compressionType === 'gzip') {
+        compressStream = zlib.createGzip();
+      } else if (compressionType === 'deflate') {
+        compressStream = zlib.createDeflate();
+      } else if (compressionType === 'br') {
+        compressStream = zlib.createBrotliCompress();
+      } else {
+        res.statusCode = 400;
+
+        return res.end('Unsupported compression type');
+      }
+
+      const mimeTypes = {
+        gzip: 'application/gzip',
+        deflate: 'application/zlib',
+        br: 'application/brotli',
+      };
+
+      res.statusCode = 200;
+
+      res.setHeader(
+        'Content-Type',
+        mimeTypes[compressionType] || 'application/octet-stream',
+      );
+
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename=${filename}.${ext}`,
+      );
+
+      filesStream.pipe(compressStream).pipe(res);
+    };
+
+    bb.on('field', (name, val) => {
       if (name === 'compressionType') {
         compressionType = val;
+        // startCompression();
       }
     });
 
-    busboy.on('file', (fieldname, stream, info) => {
-      if (fieldname === 'file') {
+    bb.on('file', (fieldname, stream, info) => {
+      // console.log('Got file:', info.filename);
+
+      if (fieldname === 'file' && compressionType) {
         gotFile = true;
         filename = info.filename;
         filesStream = stream;
+        startCompression();
 
         stream.on('error', () => {
           if (!res.writableEnded) {
@@ -64,54 +144,41 @@ function createServer() {
       }
     });
 
-    busboy.on('finish', () => {
+    bb.on('close', () => {
+      // console.log('Request parsing complete.');
+
       if (!gotFile || !compressionType) {
         if (filesStream) {
           filesStream.resume();
         }
-        res.statusCode = 400;
 
-        return res.end('Invalid Form');
-      }
-
-      let compressStream;
-
-      if (compressionType === 'gzip') {
-        compressStream = zlib.createGzip();
-      } else if (compressionType === 'deflate') {
-        compressStream = zlib.createDeflate();
-      } else if (compressionType === 'br') {
-        compressStream = zlib.createBrotliCompress();
-      } else {
-        filesStream.resume();
-        res.statusCode = 400;
-
-        return res.end('Unsupported compression type');
-      }
-
-      compressStream.on('error', () => {
         if (!res.writableEnded) {
-          res.statusCode = 500;
-          res.end('Compression error');
+          res.statusCode = 400;
+          res.end('Invalid Form');
         }
-      });
-
-      res.writeHead(200, {
-        'Content-Disposition': `attachment; filename=${filename}.${compressionType}`,
-        'Content-Type': 'application/octet-stream',
-      });
-
-      filesStream.pipe(compressStream).pipe(res);
+      }
     });
 
-    busboy.on('error', () => {
+    bb.on('error', () => {
       if (!res.writableEnded) {
         res.statusCode = 400;
         res.end('Busboy error');
       }
     });
 
-    req.pipe(busboy);
+    req.on('aborted', () => {
+      if (filesStream) {
+        filesStream.destroy();
+      }
+    });
+
+    req.on('error', () => {
+      if (!res.writableEnded) {
+        res.statusCode = 500;
+        res.end('Request error');
+      }
+    });
+    req.pipe(bb);
   });
 
   return server;
