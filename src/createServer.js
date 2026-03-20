@@ -58,13 +58,20 @@ function createServer() {
         return;
       }
 
+      const extensionMap = {
+        // 👈 mapping ajouté
+        gzip: 'gz',
+        deflate: 'dfl',
+        br: 'br',
+      };
+
       let compressStream;
       let contentType = 'application/octet-stream';
 
-      if (compressionType === 'gz') {
+      if (compressionType === 'gzip') {
         compressStream = zlib.createGzip();
         contentType = 'application/gzip';
-      } else if (compressionType === 'fdl') {
+      } else if (compressionType === 'deflate') {
         compressStream = zlib.createDeflate();
         contentType = 'application/zlib';
       } else if (compressionType === 'br') {
@@ -76,9 +83,11 @@ function createServer() {
         return res.end('Unsupported compression type');
       }
 
+      const ext = extensionMap[compressionType]; // 👈 extension correcte
+
       res.writeHead(200, {
         'Content-Type': contentType,
-        'Content-Disposition': `attachment; filename=${filename}.${compressionType}`,
+        'Content-Disposition': `attachment; filename=${filename}.${ext}`, // 👈
       });
 
       filesStream.pipe(compressStream).pipe(res);
