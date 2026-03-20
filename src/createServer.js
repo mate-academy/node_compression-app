@@ -61,10 +61,10 @@ function createServer() {
       let compressStream;
       let contentType = 'application/octet-stream';
 
-      if (compressionType === 'gzip') {
+      if (compressionType === 'gz') {
         compressStream = zlib.createGzip();
         contentType = 'application/gzip';
-      } else if (compressionType === 'deflate') {
+      } else if (compressionType === 'fdl') {
         compressStream = zlib.createDeflate();
         contentType = 'application/zlib';
       } else if (compressionType === 'br') {
