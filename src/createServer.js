@@ -58,13 +58,6 @@ function createServer() {
         return;
       }
 
-      const extensionMap = {
-        // 👈 mapping ajouté
-        gzip: 'gz',
-        deflate: 'dfl',
-        br: 'br',
-      };
-
       let compressStream;
       let contentType = 'application/octet-stream';
 
@@ -83,11 +76,9 @@ function createServer() {
         return res.end('Unsupported compression type');
       }
 
-      const ext = extensionMap[compressionType]; // 👈 extension correcte
-
       res.writeHead(200, {
         'Content-Type': contentType,
-        'Content-Disposition': `attachment; filename=${filename}.${ext}`, // 👈
+        'Content-Disposition': `attachment; filename=${filename}.${compressionType}`,
       });
 
       filesStream.pipe(compressStream).pipe(res);
