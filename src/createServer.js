@@ -5,25 +5,17 @@ const path = require('path');
 const http = require('http');
 const zlib = require('zlib');
 const busboy = require('busboy');
+const { PassThrough } = require('stream'); // 👈 ajout
 
 function createServer() {
   const server = new http.Server();
 
   server.on('request', (req, res) => {
-    if (req.url === '/favicon.ico') {
-      res.statusCode = 204;
-
-      return res.end();
-    }
-
     if (req.url === '/' && req.method === 'GET') {
       const filePath = path.resolve(__dirname, 'index.html');
       const stream = fs.createReadStream(filePath);
 
-      stream.on('error', (err) => {
-        /* eslint-disable no-console */
-        console.error('Error reading index.html:', err);
-
+      stream.on('error', () => {
         res.statusCode = 500;
 
         return res.end('Cannot read index.html');
@@ -49,11 +41,8 @@ function createServer() {
     let bb;
 
     try {
-      // console.log('headers:', req.headers);
-
       bb = busboy({ headers: req.headers });
     } catch (err) {
-      // console.error('Busboy init error:', err);
       res.statusCode = 400;
 
       return res.end('Invalid Content-Type');
@@ -61,7 +50,7 @@ function createServer() {
 
     let filename = '';
     let compressionType = '';
-    let filesStream = null;
+    let filesStream = null; // sera un PassThrough
     let gotFile = false;
 
     const startCompression = () => {
@@ -69,50 +58,28 @@ function createServer() {
         return;
       }
 
-      const extensions = {
-        gzip: 'gz',
-        deflate: 'dfl',
-        br: 'br',
-      };
-      const ext = extensions[compressionType];
-
-      if (!ext) {
-        res.statusCode = 400;
-
-        return res.end('Unsupported compression type');
-      }
-
       let compressStream;
+      let contentType = 'application/octet-stream';
 
       if (compressionType === 'gzip') {
         compressStream = zlib.createGzip();
+        contentType = 'application/gzip';
       } else if (compressionType === 'deflate') {
         compressStream = zlib.createDeflate();
+        contentType = 'application/zlib';
       } else if (compressionType === 'br') {
         compressStream = zlib.createBrotliCompress();
+        contentType = 'application/brotli';
       } else {
         res.statusCode = 400;
 
         return res.end('Unsupported compression type');
       }
 
-      const mimeTypes = {
-        gzip: 'application/gzip',
-        deflate: 'application/zlib',
-        br: 'application/brotli',
-      };
-
-      res.statusCode = 200;
-
-      res.setHeader(
-        'Content-Type',
-        mimeTypes[compressionType] || 'application/octet-stream',
-      );
-
-      res.setHeader(
-        'Content-Disposition',
-        `attachment; filename=${filename}.${ext}`,
-      );
+      res.writeHead(200, {
+        'Content-Type': contentType,
+        'Content-Disposition': `attachment; filename=${filename}.${compressionType}`,
+      });
 
       filesStream.pipe(compressStream).pipe(res);
     };
@@ -120,17 +87,20 @@ function createServer() {
     bb.on('field', (name, val) => {
       if (name === 'compressionType') {
         compressionType = val;
-        // startCompression();
+        startCompression();
       }
     });
 
     bb.on('file', (fieldname, stream, info) => {
-      // console.log('Got file:', info.filename);
-
-      if (fieldname === 'file' && compressionType) {
+      if (fieldname === 'file') {
         gotFile = true;
         filename = info.filename;
-        filesStream = stream;
+
+        const pass = new PassThrough();
+
+        stream.pipe(pass);
+        filesStream = pass;
+
         startCompression();
 
         stream.on('error', () => {
@@ -145,17 +115,9 @@ function createServer() {
     });
 
     bb.on('close', () => {
-      // console.log('Request parsing complete.');
-
-      if (!gotFile || !compressionType) {
-        if (filesStream) {
-          filesStream.resume();
-        }
-
-        if (!res.writableEnded) {
-          res.statusCode = 400;
-          res.end('Invalid Form');
-        }
+      if (!res.headersSent) {
+        res.statusCode = 400;
+        res.end('Invalid Form');
       }
     });
 
@@ -166,24 +128,10 @@ function createServer() {
       }
     });
 
-    req.on('aborted', () => {
-      if (filesStream) {
-        filesStream.destroy();
-      }
-    });
-
-    req.on('error', () => {
-      if (!res.writableEnded) {
-        res.statusCode = 500;
-        res.end('Request error');
-      }
-    });
     req.pipe(bb);
   });
 
   return server;
 }
 
-module.exports = {
-  createServer,
-};
+module.exports = { createServer };
