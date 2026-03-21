@@ -10,9 +10,9 @@ const zlib = require('zlib');
 const formidable = require('formidable');
 
 const compressMap = new Map([
-  ['gzip', { compressor: () => zlib.createGzip() }],
-  ['deflate', { compressor: () => zlib.createDeflate() }],
-  ['br', { compressor: () => zlib.createBrotliCompress() }],
+  ['gzip', { ext: 'gz', compressor: () => zlib.createGzip() }],
+  ['deflate', { ext: 'dfl', compressor: () => zlib.createDeflate() }],
+  ['br', { ext: 'br', compressor: () => zlib.createBrotliCompress() }],
 ]);
 
 function createServer() {
@@ -55,11 +55,11 @@ function createServer() {
 
             const inputPath = file.filepath;
             const readStream = fs.createReadStream(inputPath);
-            const { compressor } = compressMap.get(compressionType);
+            const { ext, compressor } = compressMap.get(compressionType);
 
             res.writeHead(200, {
               'Content-Type': 'application/octet-stream',
-              'Content-Disposition': `attachment; filename=${file.originalFilename}.${compressionType}`,
+              'Content-Disposition': `attachment; filename=${file.originalFilename}.${ext}`,
             });
 
             pipeline(readStream, compressor(), res, (error) => {
@@ -75,11 +75,6 @@ function createServer() {
                   res.destroy();
                 }
               }
-            });
-
-            req.on('close', () => {
-              readStream.destroy();
-              compressor.destroy();
             });
           });
         } else {
@@ -97,11 +92,9 @@ function createServer() {
         return;
       }
 
-      const html = fs.readFileSync(realPath);
-
       res.statusCode = 200;
       res.setHeader('Content-Type', mimeType);
-      res.end(html);
+      res.end('OK');
     } catch (error) {
       res.statusCode = 500;
       res.end('Server Error');
