@@ -92,9 +92,11 @@ function createServer() {
         return;
       }
 
+      const dataStream = fs.createReadStream(realPath);
+
       res.statusCode = 200;
       res.setHeader('Content-Type', mimeType);
-      res.end('OK');
+      dataStream.pipe(res);
     } catch (error) {
       res.statusCode = 500;
       res.end('Server Error');
