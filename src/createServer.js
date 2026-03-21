@@ -10,44 +10,59 @@ function createServer() {
     if (req.url === '/' && req.method === 'GET') {
       res.writeHead(200, { 'Content-Type': 'text/plain' });
       res.end('hello world');
+
+      return;
     }
 
     if (req.url === '/compress') {
-      if (req.method === 'GET') {
+      if (req.method !== 'POST') {
         res.statusCode = 400;
 
         return res.end('trouble');
       }
 
-      let body = '';
+      const contentType = req.headers['content-type'] || '';
+      const boundaryMatch = contentType.match(/boundary=(.*)/);
+
+      if (!boundaryMatch) {
+        res.statusCode = 400;
+
+        return res.end();
+      }
+
+      const boundary = boundaryMatch[1];
+
+      const chunks = [];
 
       req.on('data', (chunk) => {
-        body += chunk.toString();
+        chunks.push(chunk);
       });
 
       req.on('end', () => {
-        const filenameMatch = body.match(/filename="(.+?)"/);
-        const filename = filenameMatch ? filenameMatch[1] : 'file';
+        const buffer = Buffer.concat(chunks);
+        const body = buffer.toString('binary');
 
-        if (!filename || !body.includes('name="file"')) {
-          res.statusCode = 400;
-
-          return res.end();
-        }
-
-        const boundaryObj =
-          req.headers['content-type'] &&
-          req.headers['content-type'].match(/boundary=(.*)/);
-        const boundary = boundaryObj ? boundaryObj[1] : '';
         const parts = body.split(`--${boundary}`);
-        let fileContent = '';
+
+        let fileContent = null;
+        let filename = 'file';
         let compressionType = null;
 
         for (const part of parts) {
           if (part.includes('name="file"')) {
-            const fileStart = part.indexOf('\r\n\r\n') + 4;
+            const filenameMatch = part.match(/filename="(.+?)"/);
 
-            fileContent = part.substring(fileStart, part.lastIndexOf('\r\n'));
+            if (filenameMatch) {
+              filename = filenameMatch[1];
+            }
+
+            const fileStart = part.indexOf('\r\n\r\n') + 4;
+            const fileEnd = part.lastIndexOf('\r\n');
+
+            fileContent = Buffer.from(
+              part.substring(fileStart, fileEnd),
+              'binary',
+            );
           } else if (part.includes('name="compressionType"')) {
             const valStart = part.indexOf('\r\n\r\n') + 4;
             const parsedType = part
@@ -58,6 +73,12 @@ function createServer() {
               compressionType = parsedType;
             }
           }
+        }
+
+        if (fileContent === null || !filename) {
+          res.statusCode = 400;
+
+          return res.end();
         }
 
         if (!compressionType) {
@@ -95,16 +116,18 @@ function createServer() {
         fileStream.pipe(compressor).pipe(res);
       });
 
+      req.on('error', () => {
+        res.statusCode = 500;
+        res.end();
+      });
+
       return;
     }
 
-    if (req.method !== 'GET' || req.url !== '/') {
-      res.statusCode = 404;
-      res.end('Not Found');
-    }
+    res.statusCode = 404;
+    res.end('Not Found');
   });
 
-  // Return instance of http.Server class
   return server;
 }
 
