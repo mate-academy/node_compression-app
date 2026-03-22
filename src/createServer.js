@@ -40,7 +40,16 @@ function createServer() {
       }
 
       if (request.method === 'POST') {
-        const boundary = request.headers['content-type'].split('boundary=')[1];
+        const contentType = request.headers['content-type'];
+
+        if (!contentType || !contentType.includes('boundary=')) {
+          response.statusCode = 400;
+          response.end('Bad Request');
+
+          return;
+        }
+
+        const boundary = contentType.split('boundary=')[1];
 
         const chunks = [];
 
@@ -87,20 +96,20 @@ function createServer() {
           const fileStream = Readable.from(fileBuffer);
 
           let compressedStream;
+          let extension;
 
           if (compressionType === 'gzip') {
             compressedStream = zlib.createGzip();
-          }
-
-          if (compressionType === 'deflate') {
+            extension = 'gz';
+          } else if (compressionType === 'deflate') {
             compressedStream = zlib.createDeflate();
-          }
-
-          if (compressionType === 'br') {
+            extension = 'dfl';
+          } else if (compressionType === 'br') {
             compressedStream = zlib.createBrotliCompress();
+            extension = 'br';
           }
 
-          const newFileName = `${fileName}.${compressionType}`;
+          const newFileName = `${fileName}.${extension}`;
 
           response.statusCode = 200;
 
