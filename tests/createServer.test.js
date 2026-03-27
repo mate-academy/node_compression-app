@@ -29,12 +29,15 @@ function stringToStream(str) {
 const compressionTypes = {
   gzip: {
     decompress: util.promisify(zlib.gunzip),
+    extension: 'gz',
   },
   deflate: {
     decompress: util.promisify(zlib.inflate),
+    extension: 'dfl',
   },
   br: {
     decompress: util.promisify(zlib.brotliDecompress),
+    extension: 'br',
   },
 };
 
@@ -96,7 +99,7 @@ describe('createServer', () => {
       });
 
       Object.entries(compressionTypes).forEach(
-        ([compressionType, { decompress }]) => {
+        ([compressionType, { decompress, extension }]) => {
           describe(`compression type "${compressionType}"`, () => {
             it('should respond with 200 status code', () => {
               expect.assertions(1);
@@ -124,7 +127,7 @@ describe('createServer', () => {
                   headers: formData.getHeaders(),
                 })
                 .then((res) => {
-                  const expectedHeader = `attachment; filename=${filename}.${compressionType}`;
+                  const expectedHeader = `attachment; filename=${filename}.${extension}`;
 
                   expect(res.headers['content-disposition']).toBe(
                     expectedHeader,
