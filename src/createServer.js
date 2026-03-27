@@ -16,11 +16,11 @@ function createServer() {
 
     const compressionMap = {
       gzip: {
-        extension: 'gzip',
+        extension: 'gz',
         createStream: () => zlib.createGzip(),
       },
       deflate: {
-        extension: 'deflate',
+        extension: 'dfl',
         createStream: () => zlib.createDeflate(),
       },
       br: {
