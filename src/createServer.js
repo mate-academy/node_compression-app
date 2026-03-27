@@ -15,12 +15,21 @@ function createServer() {
     const realPath = requestPath;
 
     const compressionMap = {
-      gzip: () => zlib.createGzip(),
-      deflate: () => zlib.createDeflate(),
-      br: () => zlib.createBrotliCompress(),
+      gzip: {
+        extension: 'gzip',
+        createStream: () => zlib.createGzip(),
+      },
+      deflate: {
+        extension: 'deflate',
+        createStream: () => zlib.createDeflate(),
+      },
+      br: {
+        extension: 'br',
+        createStream: () => zlib.createBrotliCompress(),
+      },
     };
 
-    if (req.url === '/compress' && req.method === 'POST') {
+    if (url.pathname === '/compress' && req.method === 'POST') {
       const form = formidable({ multiples: false });
 
       form.parse(req, (err, fields, files) => {
@@ -44,9 +53,9 @@ function createServer() {
           return;
         }
 
-        const createCompressionStream = compressionMap[compressionType];
+        const compressionConfig = compressionMap[compressionType];
 
-        if (!createCompressionStream) {
+        if (!compressionConfig) {
           res.statusCode = 400;
           res.end('Unsupported compression type');
 
@@ -54,8 +63,8 @@ function createServer() {
         }
 
         const readStream = fs.createReadStream(file.filepath);
-        const compressStream = createCompressionStream();
-        const outputFileName = `${file.originalFilename}.${compressionType}`;
+        const compressStream = compressionConfig.createStream();
+        const outputFileName = `${file.originalFilename}.${compressionConfig.extension}`;
 
         res.statusCode = 200;
 
@@ -80,26 +89,26 @@ function createServer() {
       return;
     }
 
-    if (req.url === '/compress' && req.method === 'GET') {
+    if (url.pathname === '/compress' && req.method === 'GET') {
       res.statusCode = 400;
       res.end('Wrong URL');
 
       return;
     }
 
-    if (req.url === '/' && req.method === 'GET') {
+    if (url.pathname === '/' && req.method === 'GET') {
       const fileStream = fs.createReadStream(realPath);
       const mimeType = mime.contentType(path.extname(realPath)) || 'text/plain';
 
       res.statusCode = 200;
       res.setHeader('Content-Type', mimeType);
       fileStream.pipe(res);
-    } else {
-      if (!fs.existsSync(realPath)) {
-        res.statusCode = 404;
-        res.end('Not Found');
-      }
+
+      return;
     }
+
+    res.statusCode = 404;
+    res.end('Not Found');
   });
 }
 
