@@ -105,7 +105,12 @@ async function handleCompressRequest(req, res) {
   const file = formData.file;
   const compressionType = formData.compressionType;
 
-  if (!file || !file.filename || !Buffer.isBuffer(file.content) || !compressionType) {
+  if (
+    !file ||
+    !file.filename ||
+    !Buffer.isBuffer(file.content) ||
+    !compressionType
+  ) {
     sendTextResponse(res, 400, 'Invalid form data');
 
     return;
