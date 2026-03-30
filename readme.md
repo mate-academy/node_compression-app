@@ -4,10 +4,10 @@ Implement a page with HTML `form` that allows to:
 - choose a compression type supported by zlib (add select field with name `compressionType` and options: `gzip`, `deflate`, `br`)
 - add a button to submit the form
 - send submitted form data to the server via POST request to `/compress` endpoint
-- and receive a compressed file in response with the same name as the original file but with appended compression type extension (`.gz`, `.dfl`, `.br` respectively), example:
+- and receive a compressed file in response with the same name as the original file but with appended compression type extension (`.gzip`, `.deflate`, `.br` respectively), example:
   - original file: `file.txt`
   - compression type: `gzip`
-  - compressed file: `file.txt.gz`
+  - compressed file: `file.txt.gzip`
 
 To pass the task you also need to implement a server that:
 - use Streams
