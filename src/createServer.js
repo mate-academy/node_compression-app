@@ -11,8 +11,8 @@ const compressors = {
 };
 
 const extensions = {
-  gzip: '.gz',
-  deflate: '.dfl',
+  gzip: '.gzip',
+  deflate: '.deflate',
   br: '.br',
 };
 
