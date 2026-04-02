@@ -7,6 +7,12 @@ const { IncomingForm } = require('formidable');
 
 const SUPPORTED_TYPES = new Set(['gzip', 'deflate', 'br']);
 
+const EXTENSION_MAP = {
+  gzip: 'gz',
+  deflate: 'dfl',
+  br: 'br',
+};
+
 function getFirstValue(value) {
   return Array.isArray(value) ? value[0] : value;
 }
@@ -64,7 +70,7 @@ function handleCompressRequest(req, res) {
 
     res.writeHead(200, {
       'Content-Type': 'application/octet-stream',
-      'Content-Disposition': `attachment; filename=${filename}.${compressionType}`,
+      'Content-Disposition': `attachment; filename=${filename}.${EXTENSION_MAP[compressionType]}`,
     });
 
     fs.createReadStream(file.filepath)
