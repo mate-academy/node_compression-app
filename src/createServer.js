@@ -16,6 +16,12 @@ const extensions = {
   br: '.br',
 };
 
+function getBoundary(contentType = '') {
+  const match = contentType.match(/boundary=(?:"([^"]+)"|([^;]+))/i);
+
+  return match ? match[1] || match[2] : null;
+}
+
 async function readRequestBody(req) {
   const chunks = [];
 
@@ -24,12 +30,6 @@ async function readRequestBody(req) {
   }
 
   return Buffer.concat(chunks);
-}
-
-function getBoundary(contentType = '') {
-  const match = contentType.match(/boundary=(?:"([^"]+)"|([^;]+))/i);
-
-  return match ? match[1] || match[2] : null;
 }
 
 function parsePartHeaders(headerText) {
