@@ -1,6 +1,9 @@
 'use strict';
 
 const http = require('http');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
 const zlib = require('zlib');
 const busboy = require('busboy');
 
@@ -38,26 +41,118 @@ function createServer() {
         const bb = busboy({ headers: req.headers });
 
         bb.on('error', () => {
-          res.writeHead(400);
+          res.writeHead(400, { 'Content-Type': 'text/plain' });
           res.end('Form parsing error');
         });
 
         let filename = '';
         let type = '';
         let hasFile = false;
-        const chunks = [];
-        let fileStreamError = false;
+        let streamError = false;
+        let tmpPath = '';
+        let uploadDone = false;
+        let fileWritten = false;
+        let maybeResponded = false;
+
+        const tryHandleRequest = () => {
+          if (!uploadDone || !fileWritten || maybeResponded) {
+            return;
+          }
+
+          if (streamError) {
+            maybeResponded = true;
+            res.writeHead(500, { 'Content-Type': 'text/plain' });
+            res.end('Stream error');
+
+            return;
+          }
+
+          if (!hasFile || !filename || !type) {
+            maybeResponded = true;
+            res.writeHead(400, { 'Content-Type': 'text/plain' });
+            res.end('Invalid form');
+
+            if (tmpPath) {
+              fs.unlink(tmpPath, () => {});
+            }
+
+            return;
+          }
+
+          let compressor = null;
+
+          switch (type) {
+            case 'gzip':
+              compressor = zlib.createGzip();
+              break;
+            case 'deflate':
+              compressor = zlib.createDeflate();
+              break;
+            case 'br':
+              compressor = zlib.createBrotliCompress();
+              break;
+            default:
+              maybeResponded = true;
+              res.writeHead(400, { 'Content-Type': 'text/plain' });
+              res.end('Unsupported type');
+
+              fs.unlink(tmpPath, () => {});
+
+              return;
+          }
+
+          maybeResponded = true;
+
+          res.writeHead(200, {
+            'Content-Type': 'application/octet-stream',
+            'Content-Disposition': `attachment; filename=${filename}.${type}`,
+          });
+
+          const fileStream = fs.createReadStream(tmpPath);
+          const cleanup = () => {
+            fs.unlink(tmpPath, () => {});
+          };
+
+          fileStream.on('error', (err) => {
+            cleanup();
+            res.destroy(err);
+          });
+
+          compressor.on('error', (err) => {
+            cleanup();
+            res.destroy(err);
+          });
+
+          res.on('close', cleanup);
+          res.on('finish', cleanup);
+
+          fileStream.pipe(compressor).pipe(res);
+        };
 
         bb.on('file', (fieldname, file, info) => {
           hasFile = true;
           filename = info.filename;
 
-          file.on('data', (chunk) => {
-            chunks.push(chunk);
+          tmpPath = path.join(
+            os.tmpdir(),
+            `compression-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+          );
+
+          const writeStream = fs.createWriteStream(tmpPath);
+
+          file.pipe(writeStream);
+
+          writeStream.on('finish', () => {
+            fileWritten = true;
+            tryHandleRequest();
           });
 
           file.on('error', () => {
-            fileStreamError = true;
+            streamError = true;
+          });
+
+          writeStream.on('error', () => {
+            streamError = true;
           });
         });
 
@@ -68,47 +163,17 @@ function createServer() {
         });
 
         bb.on('finish', () => {
-          if (fileStreamError) {
-            res.writeHead(500, { 'Content-Type': 'text/plain' });
-            res.end('Stream error');
+          uploadDone = true;
 
-            return;
-          }
-
-          if (!hasFile || !filename || !type) {
+          if (!hasFile && !maybeResponded) {
+            maybeResponded = true;
             res.writeHead(400, { 'Content-Type': 'text/plain' });
             res.end('Invalid form');
 
             return;
           }
 
-          if (!['gzip', 'deflate', 'br'].includes(type)) {
-            res.writeHead(400, { 'Content-Type': 'text/plain' });
-            res.end('Unsupported type');
-
-            return;
-          }
-
-          const rawFile = Buffer.concat(chunks);
-          let compressedFile;
-
-          switch (type) {
-            case 'gzip':
-              compressedFile = zlib.gzipSync(rawFile);
-              break;
-            case 'deflate':
-              compressedFile = zlib.deflateSync(rawFile);
-              break;
-            case 'br':
-              compressedFile = zlib.brotliCompressSync(rawFile);
-              break;
-          }
-
-          res.writeHead(200, {
-            'Content-Type': 'application/octet-stream',
-            'Content-Disposition': `attachment; filename=${filename}.${type}`,
-          });
-          res.end(compressedFile);
+          tryHandleRequest();
         });
 
         req.pipe(bb);
