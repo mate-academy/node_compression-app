@@ -5,6 +5,12 @@ const http = require('http');
 const zlib = require('zlib');
 const fs = require('fs');
 
+const extensions = {
+  gzip: 'gz',
+  deflate: 'dfl',
+  br: 'br',
+};
+
 function createServer() {
   return http.createServer((req, res) => {
     if (req.url === '/') {
@@ -70,7 +76,7 @@ function createServer() {
 
         res.setHeader(
           'Content-Disposition',
-          `attachment; filename=${file.originalFilename}.${compressionType}`,
+          `attachment; filename=${file.originalFilename}.${extensions[compressionType]}`,
         );
 
         const read = fs.createReadStream(file.filepath);
