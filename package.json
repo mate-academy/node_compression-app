@@ -30,5 +30,8 @@
   },
   "mateAcademy": {
     "projectType": "javascript"
+  },
+  "dependencies": {
+    "zlib": "^1.0.5"
   }
 }
