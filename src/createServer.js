@@ -8,15 +8,15 @@ const { IncomingForm } = require('formidable');
 
 const compressionTypes = {
   gzip: {
-    compress: zlib.gzip,
+    createStream: zlib.createGzip,
     extension: 'gz',
   },
   deflate: {
-    compress: zlib.deflate,
+    createStream: zlib.createDeflate,
     extension: 'dfl',
   },
   br: {
-    compress: zlib.brotliCompress,
+    createStream: zlib.createBrotliCompress,
     extension: 'br',
   },
 };
@@ -102,29 +102,27 @@ function createServer() {
           return;
         }
 
-        fs.readFile(filePath, (readError, fileBuffer) => {
-          if (readError) {
+        const { createStream, extension } = compressionTypes[compressionType];
+        const readStream = fs.createReadStream(filePath);
+        const compressStream = createStream();
+
+        const handleStreamError = () => {
+          if (!response.headersSent) {
             sendBadRequest(response);
-
-            return;
+          } else {
+            response.destroy();
           }
+        };
 
-          const { compress, extension } = compressionTypes[compressionType];
+        readStream.on('error', handleStreamError);
+        compressStream.on('error', handleStreamError);
 
-          compress(fileBuffer, (compressError, compressed) => {
-            if (compressError) {
-              sendBadRequest(response);
-
-              return;
-            }
-
-            response.writeHead(200, {
-              'Content-Type': 'application/octet-stream',
-              'Content-Disposition': `attachment; filename=${filename}.${extension}`,
-            });
-            response.end(compressed);
-          });
+        response.writeHead(200, {
+          'Content-Type': 'application/octet-stream',
+          'Content-Disposition': `attachment; filename=${filename}.${extension}`,
         });
+
+        readStream.pipe(compressStream).pipe(response);
       });
 
       return;
