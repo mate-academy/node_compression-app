@@ -13,10 +13,10 @@ To pass the task you also need to implement a server that:
 - use Streams
 - use `zlib` module
 - write server code in `createServer.js` file (it is used to test your app)
-- respond with 404 status code if trying access a non-existent endpoint
+- respond with 404 status code if trying access a non-existent endpoint-
 - respond with 400 status code if trying send a GET request to `/compress` endpoint
-- respond with 400 status code if the form is invalid
-- respond with 400 status code if trying to compress a file with an unsupported compression type
+- respond with 400 status code if the form is invalid-
+- respond with 400 status code if trying to compress a file with an unsupported compression type-
 - respond with 200 status code and compressed file if the form is valid
 
 **Read [the guideline](https://github.com/mate-academy/js_task-guideline/blob/master/README.md) before start**

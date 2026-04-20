@@ -1,5 +1,4 @@
 /* eslint-disable no-console */
-/* Don't change code below */
 
 'use strict';
 
