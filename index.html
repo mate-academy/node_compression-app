@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Compression App</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        max-width: 640px;
+        margin: 40px auto;
+        padding: 0 16px;
+      }
+
+      form {
+        display: grid;
+        gap: 12px;
+        padding: 16px;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+      }
+
+      button {
+        width: fit-content;
+        padding: 8px 14px;
+        cursor: pointer;
+      }
+
+    </style>
+  </head>
+  <body>
+    <h1>Compression App</h1>
+
+    <form
+      action="http://localhost:5700/compress"
+      method="post"
+      enctype="multipart/form-data"
+    >
+      <label>
+        File:
+        <input type="file" name="file" required />
+      </label>
+
+      <label>
+        Compression type:
+        <select name="compressionType" required>
+          <option value="gzip">gzip</option>
+          <option value="deflate">deflate</option>
+          <option value="br">br</option>
+        </select>
+      </label>
+
+      <button type="submit">Compress</button>
+    </form>
+  </body>
+</html>
