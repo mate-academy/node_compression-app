@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Compress server</title>
+  </head>
+  <body>
+    <div style="display: flex; flex-direction: column; align-items: center; font-family: Arial, Helvetica, sans-serif;">
+      <h1>Compress Server</h1>
+      <form action="/compress" name="fileUpload" enctype="multipart/form-data" method="POST" style="display: flex; flex-direction: column; gap: 5px">
+        <label for="file">File:</label>
+        <input type="file" id="file" name="file" /><br />
+        <label for="compressionType">Compression Type:</label>
+        <select id="compressionType" name="compressionType">
+          <option value="" selected>choose</option>
+          <option value="gzip">gzip</option>
+          <option value="deflate">deflate</option>
+          <option value="br">br</option>
+        </select><br />
+        <input type="submit" value="Submit" />
+      </form>
+    </div>
+  </body>
+</html>
