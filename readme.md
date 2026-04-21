@@ -8,7 +8,6 @@ Implement a page with HTML `form` that allows to:
   - original file: `file.txt`
   - compression type: `gzip`
   - compressed file: `file.txt.gz`
-
 To pass the task you also need to implement a server that:
 - use Streams
 - use `zlib` module
