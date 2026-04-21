@@ -31,7 +31,12 @@ function createServer() {
         console.log('connection close');
         file.destroy();
       });
-      file.pipe(res);
+
+      pipeline(file, res, (err) => {
+        if (err) {
+          res.end();
+        }
+      });
     } else if (method === 'POST' && path === '/compress') {
       const form = formidable({});
 
