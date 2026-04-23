@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>File Compression App</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="container">
+    <h1>🗜️ File Compression App</h1>
+    <form action="/compress" method="POST" enctype="multipart/form-data">
+      <div class="form-group">
+        <label for="file">Select File:</label>
+        <input type="file" name="file" id="file" required>
+      </div>
+
+      <div class="form-group">
+        <label for="compressionType">Compression Type:</label>
+        <select name="compressionType" id="compressionType" required>
+          <option value="gzip">Gzip (.gz)</option>
+          <option value="deflate">Deflate (.dfl)</option>
+          <option value="br">Brotli (.br)</option>
+        </select>
+      </div>
+
+      <button type="submit">Compress File</button>
+    </form>
+
+    <div class="info">
+      <strong>ℹ️ Info:</strong>
+      Select a file and choose a compression algorithm.
+      The compressed file will be downloaded automatically.
+    </div>
+  </div>
+</body>
+</html>
