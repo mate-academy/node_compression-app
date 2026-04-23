@@ -1,0 +1,128 @@
+body {
+  box-sizing: border-box;
+  padding-top: 30px;
+  color: #747474;
+}
+
+.title {
+  margin: 0;
+  padding-bottom: 25px;
+  text-align: center;
+  font-family: 'Montserrat', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 25px;
+  color: black;
+}
+
+.app {
+  height: auto;
+  width: 700px;
+  margin: 0 auto;
+  border: 1px solid #dedbde;
+  border-radius: 6px;
+}
+
+.app__top {
+  display: flex;
+  width: auto;
+  height: 40px;
+  padding-left: 20px;
+  font-size: 20px;
+  align-items: center;
+  color: #34aced;
+  background-color: #f2f2f2;
+  border-radius: 6px;
+}
+
+.app__content {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  margin-block: 20px;
+  padding: 15px;
+}
+
+.file__section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.file__title {
+  font-size: 17px;
+}
+
+.file__wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: auto;
+  height: 35px;
+  border: 1px solid #dcdcdc;
+  border-radius: 3px;
+  transition: all .3s ease;
+}
+
+.file__wrapper:hover {
+  cursor: pointer;
+  border-color: #d0cfcf;
+}
+
+.file__input {
+  display: none;
+}
+
+.file__status {
+  padding-left: 25px;
+}
+
+.file__browse {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 80px;
+  background-color: #f5f5f5;
+  border-left: 1px solid #dcdcdc;
+}
+
+.type__section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.type__title {
+  font-size: 17px;
+}
+
+.type__select {
+  width: 100px;
+  height: 30px;
+  border: 1px solid #dcdcdc;
+  border-radius: 3px;
+  transition: all .3s ease;
+}
+
+.type__select:hover {
+  cursor: pointer;
+  border-color: #d0cfcf;
+}
+
+.submit__button {
+  margin-top: 10px;
+  height: 35px;
+  width: 150px;
+  font-family: inherit;
+  font-size: 19px;
+  letter-spacing: 0.7px;
+  color: inherit;
+  background-color: #f5f5f5;
+  border: 1px solid #dcdcdc;
+  border-radius: 3px;
+  transition: all .3s ease;
+}
+
+.submit__button:hover {
+  cursor: pointer;
+  border-color: #d0cfcf;
+}
