@@ -49,6 +49,15 @@ function createServer() {
       return res.status(400).send('No file uploaded.');
     }
 
+    res.on('finish', () => {
+      fs.unlink(file.path, (err) => {
+        if (err) {
+          // eslint-disable-next-line no-console
+          console.error('Помилка при видаленні тимчасового файлу:', err);
+        }
+      });
+    });
+
     if (!compressionType) {
       return res.status(400).send('No compression type provided.');
     }
@@ -69,13 +78,7 @@ function createServer() {
         transformer = zlib.createBrotliCompress();
         newFilename += '.br';
         break;
-      case 'none':
-        res.setHeader(
-          'Content-Disposition',
-          `attachment; filename=${newFilename}`,
-        );
 
-        return fs.createReadStream(file.path).pipe(res);
       default:
         return res.status(400).send('Invalid compression type.');
     }
