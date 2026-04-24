@@ -20,7 +20,6 @@ function createServer() {
       <input type="file" name="file">
 
       <select name="compressionType">
-        <option value="none">No Compression</option>
         <option value="gzip">Gzip</option>
         <option value="deflate">Deflate</option>
         <option value="br">Brotli</option>
@@ -68,11 +67,11 @@ function createServer() {
     switch (compressionType) {
       case 'gzip':
         transformer = zlib.createGzip();
-        newFilename += '.gzip';
+        newFilename += '.gz';
         break;
       case 'deflate':
         transformer = zlib.createDeflate();
-        newFilename += '.deflate';
+        newFilename += '.dfl';
         break;
       case 'br':
         transformer = zlib.createBrotliCompress();
