@@ -55,22 +55,13 @@ function createServer() {
         type = type[1];
 
         if (type === 'gzip') {
-          compressed = zlib.gzipSync(fileBuffer).on('error', () => {
-            res.statusCode = 200;
-            res.end('OK');
-          });
+          compressed = zlib.gzipSync(fileBuffer);
           ext = '.gz';
         } else if (type === 'deflate') {
-          compressed = zlib.deflateSync(fileBuffer).on('error', () => {
-            res.statusCode = 200;
-            res.end('OK');
-          });
+          compressed = zlib.deflateSync(fileBuffer);
           ext = '.dfl';
-        } else if (type === 'brotli') {
-          compressed = zlib.brotliCompressSync(fileBuffer).on('error', () => {
-            res.statusCode = 200;
-            res.end('OK');
-          });
+        } else if (type === 'br') {
+          compressed = zlib.brotliCompressSync(fileBuffer);
           ext = '.br';
         } else {
           res.statusCode = 400;
