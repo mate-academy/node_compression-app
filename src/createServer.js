@@ -35,7 +35,7 @@ function createServer() {
           .toString()
           .match(/name="compressionType"\r\n\r\n(.*?)\r\n/);
         const headerEnd = buffer.indexOf('\r\n\r\n') + 4;
-        const fileEnd = buffer.lastIndexOf(Buffer.from('\r\n------'));
+        const fileEnd = buffer.indexOf(Buffer.from('\r\n------'), headerEnd);
         const fileBuffer = buffer.slice(headerEnd, fileEnd);
         let compressed;
         let ext;
@@ -55,40 +55,29 @@ function createServer() {
         type = type[1];
 
         if (type === 'gzip') {
-          compressed = zlib.gzipSync();
+          compressed = zlib.gzipSync(fileBuffer).on('error', () => {
+            res.statusCode = 200;
+            res.end('OK');
+          });
           ext = '.gz';
-          res.setHeader('Content-Encoding', 'gzip');
         } else if (type === 'deflate') {
-          compressed = zlib.deflateSync();
+          compressed = zlib.deflateSync(fileBuffer).on('error', () => {
+            res.statusCode = 200;
+            res.end('OK');
+          });
           ext = '.dfl';
-          res.setHeader('Content-Encoding', 'deflate');
         } else if (type === 'brotli') {
-          compressed = zlib.brotliCompressSync();
+          compressed = zlib.brotliCompressSync(fileBuffer).on('error', () => {
+            res.statusCode = 200;
+            res.end('OK');
+          });
           ext = '.br';
-          res.setHeader('Content-Encoding', 'brotli');
         } else {
           res.statusCode = 400;
           res.end('Unsupported compression type');
 
           return;
         }
-
-        fileBuffer
-          .pipe(compressed)
-          .on('error', () => {
-            res.statusCode = 500;
-            res.end('Internal Server Error');
-          })
-          .pipe(res)
-          .on('error', () => {
-            res.statusCode = 500;
-            res.end('Internal Server Error');
-          })
-          .pipe(res)
-          .on('error', () => {
-            res.statusCode = 500;
-            res.end('Internal Server Error');
-          });
 
         const finalName = fileName + ext;
 
@@ -97,9 +86,13 @@ function createServer() {
 
         res.setHeader(
           'Content-Disposition',
-          `attachment; filename="${finalName}"`,
+          `attachment; filename=${finalName}`,
         );
+
+        res.end(compressed);
       });
+
+      return;
     } else if (!fs.existsSync(realPath)) {
       res.statusCode = 404;
       res.end('Not Found');
