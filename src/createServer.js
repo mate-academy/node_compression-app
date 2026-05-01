@@ -5,10 +5,9 @@ const path = require('path');
 const fs = require('fs');
 const mime = require('mime-types');
 const zlib = require('zlib');
+const Busboy = require('busboy');
 
 function createServer() {
-  /* Write your code here */
-  // Return instance of http.Server class
   return http.createServer((req, res) => {
     const normalizedUrl = new URL(req.url || '', `http://${req.headers.host}`);
     const requestedPath = normalizedUrl.pathname.slice(1) || 'index.html';
@@ -22,50 +21,46 @@ function createServer() {
         return;
       }
 
-      const chunks = [];
+      const busboy = Busboy({ headers: req.headers });
 
-      req.on('data', (chunk) => {
-        chunks.push(chunk);
+      let compressionType = null;
+      let fileHandled = false;
+
+      busboy.on('field', (name, value) => {
+        if (name === 'compressionType') {
+          compressionType = value;
+        }
       });
 
-      req.on('end', () => {
-        const buffer = Buffer.concat(chunks);
-        let fileName = buffer.toString().match(/filename="(.+?)"/);
-        let type = buffer
-          .toString()
-          .match(/name="compressionType"\r\n\r\n(.*?)\r\n/);
-        const headerEnd = buffer.indexOf('\r\n\r\n') + 4;
-        const fileEnd = buffer.indexOf(Buffer.from('\r\n------'), headerEnd);
-        const fileBuffer = buffer.slice(headerEnd, fileEnd);
-        let compressed;
-        let ext;
+      busboy.on('file', (name, file, info) => {
+        fileHandled = true;
 
-        if (!fileName) {
-          res.statusCode = 400;
-          res.end('Filename is required');
+        const fileName = info.filename;
 
-          return;
-        } else if (!type) {
+        if (!compressionType) {
           res.statusCode = 400;
           res.end('Compression type is required');
+          file.resume();
 
           return;
         }
-        fileName = fileName[1];
-        type = type[1];
 
-        if (type === 'gzip') {
-          compressed = zlib.gzipSync(fileBuffer);
+        let compressStream;
+        let ext;
+
+        if (compressionType === 'gzip') {
+          compressStream = zlib.createGzip();
           ext = '.gz';
-        } else if (type === 'deflate') {
-          compressed = zlib.deflateSync(fileBuffer);
+        } else if (compressionType === 'deflate') {
+          compressStream = zlib.createDeflate();
           ext = '.dfl';
-        } else if (type === 'br') {
-          compressed = zlib.brotliCompressSync(fileBuffer);
+        } else if (compressionType === 'br') {
+          compressStream = zlib.createBrotliCompress();
           ext = '.br';
         } else {
           res.statusCode = 400;
           res.end('Unsupported compression type');
+          file.resume();
 
           return;
         }
@@ -77,14 +72,31 @@ function createServer() {
 
         res.setHeader(
           'Content-Disposition',
-          `attachment; filename=${finalName}`,
+          `attachment; filename="${finalName}"`,
         );
 
-        res.end(compressed);
+        file
+          .pipe(compressStream)
+          .on('error', () => {
+            res.statusCode = 500;
+            res.end('Internal Server Error');
+          })
+          .pipe(res);
       });
 
+      busboy.on('finish', () => {
+        if (!fileHandled && !res.headersSent) {
+          res.statusCode = 400;
+          res.end('File is required');
+        }
+      });
+
+      req.pipe(busboy);
+
       return;
-    } else if (!fs.existsSync(realPath)) {
+    }
+
+    if (!fs.existsSync(realPath)) {
       res.statusCode = 404;
       res.end('Not Found');
 
@@ -93,6 +105,9 @@ function createServer() {
 
     const mimeType = mime.contentType(path.extname(realPath)) || 'text/plain';
     const fileStream = fs.createReadStream(realPath);
+
+    res.statusCode = 200;
+    res.setHeader('Content-Type', mimeType);
 
     fileStream
       .on('error', () => {
@@ -108,12 +123,6 @@ function createServer() {
     res.on('close', () => {
       fileStream.destroy();
     });
-
-    res.setHeader('Content-Type', mimeType);
-    res.statusCode = 200;
   });
 }
-
-module.exports = {
-  createServer,
-};
+module.exports = { createServer };
