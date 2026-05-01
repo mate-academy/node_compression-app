@@ -5,14 +5,19 @@ const path = require('path');
 const fs = require('fs');
 const mime = require('mime-types');
 const zlib = require('zlib');
-const Busboy = require('busboy');
+const formidable = require('formidable');
 
 function createServer() {
   return http.createServer((req, res) => {
     const normalizedUrl = new URL(req.url || '', `http://${req.headers.host}`);
+
     const requestedPath = normalizedUrl.pathname.slice(1) || 'index.html';
+
     const realPath = path.join('public', requestedPath);
 
+    // -------------------------
+    // /compress endpoint
+    // -------------------------
     if (requestedPath === 'compress') {
       if (req.method !== 'POST') {
         res.statusCode = 400;
@@ -21,26 +26,46 @@ function createServer() {
         return;
       }
 
-      const busboy = Busboy({ headers: req.headers });
-
-      let compressionType = null;
-      let fileHandled = false;
-
-      busboy.on('field', (name, value) => {
-        if (name === 'compressionType') {
-          compressionType = value;
-        }
+      const form = new formidable.IncomingForm({
+        multiples: false,
+        keepExtensions: true,
       });
 
-      busboy.on('file', (name, file, info) => {
-        fileHandled = true;
+      form.parse(req, (err, fields, files) => {
+        if (err) {
+          res.statusCode = 400;
+          res.end('Bad Request');
 
-        const fileName = info.filename;
+          return;
+        }
 
-        if (!compressionType) {
+        const compressionType = Array.isArray(fields.compressionType)
+          ? fields.compressionType[0]
+          : fields.compressionType;
+
+        const uploadedFile = Array.isArray(files.file)
+          ? files.file[0]
+          : files.file;
+
+        if (!uploadedFile) {
+          res.statusCode = 400;
+          res.end('File is required');
+
+          return;
+        }
+
+        if (compressionType === undefined) {
           res.statusCode = 400;
           res.end('Compression type is required');
-          file.resume();
+
+          return;
+        }
+
+        const fileName = uploadedFile.originalFilename;
+
+        if (!fileName) {
+          res.statusCode = 400;
+          res.end('Filename is required');
 
           return;
         }
@@ -60,7 +85,6 @@ function createServer() {
         } else {
           res.statusCode = 400;
           res.end('Unsupported compression type');
-          file.resume();
 
           return;
         }
@@ -72,30 +96,39 @@ function createServer() {
 
         res.setHeader(
           'Content-Disposition',
-          `attachment; filename="${finalName}"`,
+          `attachment; filename=${finalName}`,
         );
 
-        file
+        const fileStream = fs.createReadStream(uploadedFile.filepath);
+
+        fileStream
+          .on('error', () => {
+            if (!res.headersSent) {
+              res.statusCode = 500;
+              res.end('Internal Server Error');
+            }
+          })
           .pipe(compressStream)
           .on('error', () => {
-            res.statusCode = 500;
-            res.end('Internal Server Error');
+            if (!res.headersSent) {
+              res.statusCode = 500;
+              res.end('Internal Server Error');
+            }
           })
           .pipe(res);
-      });
 
-      busboy.on('finish', () => {
-        if (!fileHandled && !res.headersSent) {
-          res.statusCode = 400;
-          res.end('File is required');
-        }
+        res.on('finish', () => {
+          fileStream.destroy();
+          fs.unlink(uploadedFile.filepath, () => {});
+        });
       });
-
-      req.pipe(busboy);
 
       return;
     }
 
+    // -------------------------
+    // Static files
+    // -------------------------
     if (!fs.existsSync(realPath)) {
       res.statusCode = 404;
       res.end('Not Found');
@@ -104,25 +137,27 @@ function createServer() {
     }
 
     const mimeType = mime.contentType(path.extname(realPath)) || 'text/plain';
-    const fileStream = fs.createReadStream(realPath);
 
     res.statusCode = 200;
     res.setHeader('Content-Type', mimeType);
 
-    fileStream
+    const staticFileStream = fs.createReadStream(realPath);
+
+    staticFileStream
       .on('error', () => {
-        res.statusCode = 500;
-        res.end('Internal Server Error');
+        if (!res.headersSent) {
+          res.statusCode = 500;
+          res.end('Internal Server Error');
+        }
       })
-      .pipe(res)
-      .on('error', () => {
-        res.statusCode = 500;
-        res.end('Internal Server Error');
-      });
+      .pipe(res);
 
     res.on('close', () => {
-      fileStream.destroy();
+      staticFileStream.destroy();
     });
   });
 }
-module.exports = { createServer };
+
+module.exports = {
+  createServer,
+};
