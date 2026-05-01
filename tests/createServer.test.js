@@ -14,7 +14,7 @@ const { createServer } = require('../src/createServer');
 // this prevents `socket hang up` for Node.js 20.10+
 axios.defaults.httpAgent = new Agent({ keepAlive: false });
 
-const PORT = 5701;
+const PORT = 5700;
 const HOST = `http://localhost:${PORT}`;
 
 function stringToStream(str) {
