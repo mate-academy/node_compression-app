@@ -78,6 +78,9 @@ function createServer() {
         });
         // file.pipe(fn()).pipe(res);
 
+        console.log(`file`, file);
+        console.log('compressionType', compressionType);
+
         pipeline(file, fn(), res, (err) => {
           if (err) {
             res.statusCode = 500;
