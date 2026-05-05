@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>File Compressor</title>
+  </head>
+
+  <body
+    style="
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      color: #111;
+    "
+  >
+    <div
+      style="
+        max-width: 420px;
+        margin: 100px auto;
+        padding: 24px;
+        background: #fff;
+        border: 1px solid #e5e5e5;
+        border-radius: 10px;
+      "
+    >
+      <h1 style="font-size: 20px; margin-bottom: 20px; font-weight: 600">
+        File Compressor
+      </h1>
+
+      <form action="/compress" method="post" enctype="multipart/form-data">
+        <!-- 1. Сначала compressionType -->
+        <div style="margin-bottom: 16px">
+          <label
+            style="
+              display: block;
+              font-size: 12px;
+              margin-bottom: 6px;
+              color: #555;
+            "
+          >
+            Compression type
+          </label>
+          <select
+            name="compressionType"
+            required
+            style="
+              width: 100%;
+              padding: 10px;
+              border: 1px solid #ddd;
+              border-radius: 6px;
+              background: #fafafa;
+            "
+          >
+            <option value="gzip">gzip</option>
+            <option value="deflate">deflate</option>
+            <option value="br">br</option>
+          </select>
+        </div>
+
+        <!-- 2. Потом file -->
+        <div style="margin-bottom: 20px">
+          <label
+            style="
+              display: block;
+              font-size: 12px;
+              margin-bottom: 6px;
+              color: #555;
+            "
+          >
+            File
+          </label>
+          <input
+            type="file"
+            name="file"
+            required
+            style="
+              width: 100%;
+              padding: 10px;
+              border: 1px solid #ddd;
+              border-radius: 6px;
+              background: #fafafa;
+            "
+          />
+        </div>
+
+        <button
+          type="submit"
+          style="
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            background: #111;
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+          "
+        >
+          Compress file
+        </button>
+      </form>
+    </div>
+  </body>
+</html>
