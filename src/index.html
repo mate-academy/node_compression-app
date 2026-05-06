@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Compression App</title>
+  </head>
+  <body>
+    <form method="POST" action="/compress" enctype="multipart/form-data">
+      <!-- 1. поле для файлу -->
+      <input type="file" name="file">
+
+      <!-- 2. випадаючий список -->
+      <select name="compressionType">
+        <option value="gzip">gzip</option>
+        <option value="deflate">deflate</option>
+        <option value="br">br</option>
+      </select>
+
+      <!-- 3. кнопка -->
+      <button type="submit">submit</button>
+    </form>
+  </body>
+</html>
