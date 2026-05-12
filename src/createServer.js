@@ -3,62 +3,66 @@
 
 const http = require('http');
 const zlib = require('zlib');
-const Busboy = require('busboy');
 
 function parseMultipart(req, callback) {
   const contentType = req.headers['content-type'] || '';
+  const boundaryMatch = contentType.match(/boundary=(.+)$/);
 
-  if (!contentType.toLowerCase().startsWith('multipart/form-data')) {
+  if (!boundaryMatch) {
     return callback(new Error('No boundary'), null);
   }
 
-  const result = { fields: {}, file: null };
-  let callbackCalled = false;
+  const boundary = boundaryMatch[1];
+  const chunks = [];
 
-  const done = (err, value) => {
-    if (callbackCalled) {
-      return;
+  req.on('data', (chunk) => chunks.push(chunk));
+
+  req.on('end', () => {
+    const buffer = Buffer.concat(chunks);
+    const result = { fields: {}, file: null };
+
+    // Розбиваємо на частини по boundary
+    const delimiter = Buffer.from(`\r\n--${boundary}`);
+    const parts = splitBuffer(buffer, delimiter);
+
+    for (const part of parts) {
+      // Заголовки та тіло частини розділені \r\n\r\n
+      const headerEnd = indexOfSequence(part, Buffer.from('\r\n\r\n'));
+
+      if (headerEnd === -1) {
+        continue;
+      }
+
+      const headerStr = part.slice(0, headerEnd).toString();
+      // Тіло — все після \r\n\r\n
+      const body = part.slice(headerEnd + 4);
+
+      // Ім'я поля з Content-Disposition
+      const nameMatch = headerStr.match(/name="([^"]+)"/);
+
+      if (!nameMatch) {
+        continue;
+      }
+
+      const fieldName = nameMatch[1];
+      const filenameMatch = headerStr.match(/filename="([^"]+)"/);
+
+      if (filenameMatch) {
+        // Це файлове поле
+        result.file = {
+          filename: filenameMatch[1],
+          data: body,
+        };
+      } else {
+        // Звичайне текстове поле
+        result.fields[fieldName] = body.toString();
+      }
     }
 
-    callbackCalled = true;
-    callback(err, value);
-  };
-
-  let busboy;
-
-  try {
-    busboy = Busboy({ headers: req.headers });
-  } catch (err) {
-    return done(err, null);
-  }
-
-  busboy.on('field', (fieldName, value) => {
-    result.fields[fieldName] = value;
+    callback(null, result);
   });
 
-  busboy.on('file', (fieldName, file, info) => {
-    const fileInfo = typeof info === 'object' && info !== null
-      ? info
-      : {
-          filename: arguments[2],
-          encoding: arguments[3],
-          mimeType: arguments[4],
-        };
-
-    result.file = {
-      fieldName,
-      filename: fileInfo.filename,
-      encoding: fileInfo.encoding,
-      mimeType: fileInfo.mimeType,
-      stream: file,
-    };
-  });
-
-  busboy.on('error', (err) => done(err, null));
-  req.on('error', (err) => done(err, null));
-  busboy.on('finish', () => done(null, result));
-
-  req.pipe(busboy);
+  req.on('error', (err) => callback(err, null));
 }
 
 // Розбиває Buffer на масив Buffer-ів по розділювачу
