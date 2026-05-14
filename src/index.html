@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f5f5f5;
+    }
+
+    .container {
+      width: 80%;
+      margin: 0 auto;
+      padding: 0;
+      display: flex;
+      height: 100vh;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .mainTitle {
+      text-align: center;
+      color: #333;
+    }
+
+    .mainDescription {
+      text-align: center;
+      color: #666;
+      margin-bottom: 40px;
+    }
+
+    .form {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .label {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      font-size: 18px;
+      color: #333;
+    }
+
+    .fileInput {
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background-color: #fff;
+      cursor: pointer;
+    }
+
+    .selector {
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background-color: #fff;
+      cursor: pointer;
+    }
+
+    .submitBtn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      background-color: #007bff;
+      color: #fff;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
+  <title>The Compressor</title>
+</head>
+<body>
+  <div class="container">
+    <h1 class="mainTitle">Welcome to The Compressor</h1>
+
+    <p class="mainDescription">
+    This is a simple web application that allows you to upload a file and compress it
+    using one of three compression algorithms: gzip, deflate, or brotli (br).
+    To use the application, simply select a file from your computer, choose the desired compression
+    type from the dropdown menu, and click the "Compress" button. The compressed file will be generated
+    and made available for download. Enjoy compressing your files with ease!
+    </p>
+
+    <form action="/compress" method="POST" enctype="multipart/form-data" class="form">
+      <label class="label">
+        <span>Choose a file to compress:</span>
+        <input class="fileInput" type="file" id="file" name="file" required>
+      </label>
+
+      <label class="label">
+        <span>Choose a compression type:</span>
+        <select class="selector" id="compressionType" name="compressionType" required>
+          <option value="gzip">gzip</option>
+          <option value="deflate">deflate</option>
+          <option value="br">brotli</option>
+        </select>
+      </label>
+
+      <button type="submit" class="submitBtn">Compress</button>
+
+    </form>
+  </div>
+</body>
+</html>
