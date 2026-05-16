@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <form action="/compress" method="post" enctype="multipart/form-data">
+      <input type="file" name="file" />
+      <select name="compressionType">
+        <option value="gzip">gzip</option>
+        <option value="deflate">deflate</option>
+        <option value="br">br</option>
+      </select>
+      <button type="submit">Submit</button>
+    </form>
+  </body>
+</html>
