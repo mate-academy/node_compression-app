@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>File Compression</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f0f2f5;
+      font-family: system-ui, sans-serif;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 2rem;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    }
+    h1 { font-size: 1.4rem; margin-bottom: 1.5rem; color: #1a1a2e; }
+    label { display: block; font-size: 0.85rem; font-weight: 600; color: #444; margin-bottom: 0.4rem; }
+    .field { margin-bottom: 1.2rem; }
+    input[type="file"], select {
+      width: 100%;
+      padding: 0.55rem 0.75rem;
+      border: 1.5px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      background: #fafafa;
+      transition: border-color 0.2s;
+    }
+    input[type="file"]:focus, select:focus {
+      outline: none;
+      border-color: #6366f1;
+    }
+    button {
+      width: 100%;
+      padding: 0.7rem;
+      background: #6366f1;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover { background: #4f46e5; }
+    button:active { background: #4338ca; }
+    .status { margin-top: 1rem; font-size: 0.9rem; text-align: center; color: #6b7280; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🗜️ File Compressor</h1>
+    <form id="compressForm">
+      <div class="field">
+        <label for="file">Select File</label>
+        <input type="file" id="file" name="file" required />
+      </div>
+      <div class="field">
+        <label for="compressionType">Compression Type</label>
+        <select id="compressionType" name="compressionType">
+          <option value="gzip">gzip (.gz)</option>
+          <option value="deflate">deflate (.dfl)</option>
+          <option value="br">brotli (.br)</option>
+        </select>
+      </div>
+      <button type="submit">Compress &amp; Download</button>
+    </form>
+    <p class="status" id="status"></p>
+  </div>
+
+  <script>
+    document.getElementById('compressForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const status = document.getElementById('status');
+      const fileInput = document.getElementById('file');
+      const compressionType = document.getElementById('compressionType').value;
+
+      if (!fileInput.files.length) {
+        status.textContent = 'Please select a file.';
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+      formData.append('compressionType', compressionType);
+
+      status.textContent = 'Compressing…';
+
+      try {
+        const response = await fetch('/compress', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const text = await response.text();
+          status.textContent = `Error ${response.status}: ${text}`;
+          return;
+        }
+
+        const blob = await response.blob();
+        const disposition = response.headers.get('Content-Disposition') || '';
+        let filename = fileInput.files[0].name;
+
+        const match = disposition.match(/filename="?([^"]+)"?/);
+        if (match) filename = match[1];
+
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        status.textContent = `✅ Downloaded as "${filename}"`;
+      } catch (err) {
+        status.textContent = `Network error: ${err.message}`;
+      }
+    });
+  </script>
+</body>
+</html>
