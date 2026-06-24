@@ -1,0 +1,17 @@
+.label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  & input{
+    display: block;
+    width: fit-content;
+    margin: 0;
+    padding: 0;
+  }
+}
+
+.form {
+  display: flex;
+  gap: 20px;
+}
