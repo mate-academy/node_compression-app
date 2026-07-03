@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Node.js Server</title>
+</head>
+<body>
+
+    <h1>File Compression Service</h1>
+
+    <form action="/compress" method="POST" enctype="multipart/form-data">
+        <div>
+            <label for="file">Select a file:</label>
+            <input type="file" id="file" name="file" required>
+        </div>
+        <br>
+        <div>
+            <label for="compressionType">Choose compression type:</label>
+            <select id="compressionType" name="compressionType" required>
+                <option value="gzip">gzip (.gz)</option>
+                <option value="deflate">deflate (.dfl)</option>
+                <option value="br">brotli (.br)</option>
+            </select>
+        </div>
+        <br>
+        <button type="submit">Compress & Download</button>
+    </form>
+
+</body>
+</html>
