@@ -74,10 +74,15 @@ function createServer() {
           },
         };
 
+        if (!compressionType) {
+          res.statusCode = 400;
+
+          return res.end('Form is invalid');
+        }
+
         const compressor = compressors[compressionType];
 
         if (!compressor) {
-          fs.unlink(uploadedFilePath, () => {});
           res.statusCode = 400;
 
           return res.end('Unsupported compression type');
