@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      body {
+        padding: 1rem;
+      }
+
+      nav,
+      h1,
+      p {
+        margin-inline: auto;
+        min-width: 350px;
+        max-width: 600px;
+      }
+
+      form {
+        margin-inline: auto;
+        padding: 1rem;
+        min-width: 350px;
+        max-width: 600px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+        box-shadow: 3px 3px #888;
+
+        border: 1px solid #121212;
+
+        label {
+          width: 100%;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+
+          input,
+          select {
+            margin: 0;
+            padding: 0.4rem;
+            box-sizing: border-box;
+            width: 50%;
+          }
+        }
+
+        button {
+          padding: 0.3rem;
+          align-self: center;
+          width: 60%;
+
+          text-transform: uppercase;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <nav>
+      <a href="/">home</a>
+    </nav>
+
+    <h1>Download compressed file</h1>
+    <form action="/compress" method="post" enctype="multipart/form-data">
+      <label
+        >Choice a file for download
+        <input
+          name="file"
+          type="file"
+          required
+          placeholder="Downloaded file name"
+      /></label>
+      <label
+        >Compression type
+        <select name="compressionType">
+          <option value="gzip">gzip</option>
+          <option value="deflate">deflate</option>
+          <option value="br">br</option>
+        </select>
+      </label>
+      <button type="submit">Compress</button>
+    </form>
+    <p>{{ message }}</p>
+  </body>
+</html>
