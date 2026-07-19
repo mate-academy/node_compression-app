@@ -43,14 +43,14 @@ function createServer() {
           return;
         }
 
-        if (!file || !file.name || file.size === 0) {
+        if (!file || !file.originalFilename || file.size === 0) {
           res.statusCode = 400;
           res.end('Invalid form');
 
           return;
         }
 
-        const fileStream = fs.createReadStream(file.path);
+        const fileStream = fs.createReadStream(file.filepath);
 
         let compressor;
 
@@ -69,7 +69,7 @@ function createServer() {
         const ext =
           type === 'gzip' ? '.gz' : type === 'deflate' ? '.dfl' : '.br';
 
-        const filename = file.name + ext;
+        const filename = file.originalFilename + ext;
 
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/octet-stream');
