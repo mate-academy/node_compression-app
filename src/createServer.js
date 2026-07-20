@@ -33,8 +33,8 @@ function createServer() {
           return;
         }
 
-        const type = fields.compressionType ? fields.compressionType[0] : null;
-        const file = files.file ? files.file[0] : null;
+        const type = fields.compressionType || null;
+        const file = files.file || null;
 
         if (!allowedTypes.includes(type)) {
           res.statusCode = 400;
@@ -76,7 +76,7 @@ function createServer() {
 
         res.setHeader(
           'Content-Disposition',
-          `attachment; filename="${filename}"`,
+          `attachment; filename=${filename}`,
         );
 
         fileStream.pipe(compressor).pipe(res);
