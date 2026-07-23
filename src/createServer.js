@@ -58,6 +58,7 @@ function createServer() {
     let fileName = '';
     let tempPath = '';
     let fileCount = 0;
+    let fileFinished;
 
     busboy.on('field', (name, val, info) => {
       if (name === 'compressionType') {
@@ -72,11 +73,17 @@ function createServer() {
 
         tempPath = path.resolve('public', info.filename);
 
-        file.pipe(fs.createWriteStream(tempPath));
+        const writeStream = fs.createWriteStream(tempPath);
+
+        file.pipe(writeStream);
+
+        fileFinished = new Promise((resolve) => {
+          writeStream.on('close', resolve);
+        });
       }
     });
 
-    busboy.on('finish', () => {
+    busboy.on('finish', async () => {
       let compressStrim;
       let contentType = 'application/octet-stream';
 
@@ -109,6 +116,8 @@ function createServer() {
         'Content-Encoding': contentType,
         'Content-Disposition': `attachment; filename=${fileName}.${extension[compressType]}`,
       });
+
+      await fileFinished;
 
       fs.createReadStream(tempPath).pipe(compressStrim).pipe(res);
     });
