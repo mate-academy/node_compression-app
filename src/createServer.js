@@ -8,9 +8,6 @@ const zlib = require('zlib');
 const { extension } = require('./constants.js');
 
 function createServer() {
-  /* Write your code here */
-  // Return instance of http.Server class
-
   const server = new Server();
 
   server.on('request', (req, res) => {
@@ -43,7 +40,7 @@ function createServer() {
 
     if (req.url === '/compress' && req.method === 'GET') {
       res.statusCode = 400;
-      res.setHeader('Content-Type', 'text-plain');
+      res.setHeader('Content-Type', 'text/plain');
 
       return res.end('Expected POST method');
     }
