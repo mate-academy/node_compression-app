@@ -22,8 +22,8 @@ function createServer() {
 
     if (pathname === 'compress') {
       if (req.method !== 'POST') {
-        res.statusCode = 400;
-        res.end('Bad request');
+        res.statusCode = 404;
+        res.end('Not Found');
 
         return;
       }
@@ -49,7 +49,7 @@ function createServer() {
           !COMPRESSION_TYPES.includes(compressionType)
         ) {
           res.statusCode = 400;
-          res.end('Bad request');
+          res.end('Invalid form data');
 
           return;
         }
@@ -90,7 +90,7 @@ function createServer() {
     }
   });
 
-  server.on('error', () => {});
+  server.on('error', () => { });
 
   return server;
 }
