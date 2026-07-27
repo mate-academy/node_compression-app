@@ -22,8 +22,8 @@ function createServer() {
 
     if (pathname === 'compress') {
       if (req.method !== 'POST') {
-        res.statusCode = 404;
-        res.end('Not Found');
+        res.statusCode = 400;
+        res.end('Invalid request');
 
         return;
       }
