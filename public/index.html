@@ -1,0 +1,98 @@
+<!doctype html>
+<html class="theme-light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Compression App</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css"
+    />
+  </head>
+  <body>
+    <section class="section">
+      <div class="container">
+        <h1 class="title">Compression App (with Node.js)</h1>
+
+        <form action="/compress" method="post" enctype="multipart/form-data">
+          <div class="field">
+            <div class="file has-name">
+              <label class="file-label">
+                <input class="file-input" type="file" name="file" required />
+                <span class="file-cta">
+                  <span class="file-icon">
+                    <i class="fas fa-upload"></i>
+                  </span>
+                  <span class="file-label"> Choose a file… </span>
+                </span>
+                <span class="file-name">
+                  No file selected
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="label">Compress to</label>
+            <div class="control">
+              <div class="select">
+                <select name="compressionType" required>
+                  <option value="" selected disabled hidden>
+                    --Select type--
+                  </option>
+                  <option value="gzip">GZIP</option>
+                  <option value="deflate">Deflate</option>
+                  <option value="br">Brotli</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="field is-grouped">
+            <div class="control">
+              <button class="button is-link" type="submit">Compress</button>
+            </div>
+            <div class="control">
+              <button class="button is-link is-light" type="reset">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <script>
+      // 1. Display filename when select file
+      // 2. Clear filename when form reset
+
+      document.addEventListener('DOMContentLoaded', () => {
+        // 1. Display file name when select file
+        let fileInputs = document.querySelectorAll('.file.has-name');
+        for (let fileInput of fileInputs) {
+          let input = fileInput.querySelector('.file-input');
+          let name = fileInput.querySelector('.file-name');
+          input.addEventListener('change', () => {
+            let files = input.files;
+            if (files.length === 0) {
+              name.innerText = 'No file selected';
+            } else {
+              name.innerText = files[0].name;
+            }
+          });
+        }
+
+        // 2. Remove file name when form reset
+        let forms = document.getElementsByTagName('form');
+        for (let form of forms) {
+          form.addEventListener('reset', () => {
+            let names = form.querySelectorAll('.file-name');
+            for (let name of names) {
+              name.innerText = 'No file selected';
+            }
+          });
+        }
+      });
+    </script>
+  </body>
+</html>
